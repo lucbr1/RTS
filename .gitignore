@@ -87,3 +87,4 @@ docs/_build/
 *.VC.VC.opendb
 *.VC.db-shm
 *.VC.db-wal
+RTSproject/CMakePresets.json
