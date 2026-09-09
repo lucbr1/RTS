@@ -1,69 +1,89 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-*.so.*
-
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# Build directories
+================================
+C++ / CMake / SFML
+================================
+--- Build CMake ---
 build/
-Build/
-build-*/
-
-# CMake generated files
+out/
+cmake-build-*/
 CMakeFiles/
 CMakeCache.txt
+CTestTestfile.cmake
 cmake_install.cmake
 Makefile
 install_manifest.txt
 compile_commands.json
 
-# Temporary files
+--- Visual Studio ---
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+--- Compiled files ---
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exp
+
+--- Debug / Release ---
+Debug/
+Release/
+x64/
+x86/
+Win32/
+
+--- CMake generated files ---
+CMakeSettings.json
+CMakePresets.json.user
+
+--- vcpkg ---
+Ne pas versionner l'installation locale de vcpkg
+vcpkg_installed/
+
+--- Visual Studio Code ---
+.vscode/
+
+--- CLion ---
+.idea/
+
+--- Temporary files ---
 *.tmp
+*.temp
 *.log
 *.bak
 *.swp
+*~
 
-# vcpkg
-vcpkg_installed/
+--- OS files ---
+Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# debug information files
-*.dwo
+macOS
+.DS_Store
 
-# test output & cache
-Testing/
-.cache/
+--- Test / coverage ---
+coverage/
+*.gcda
+*.gcno
+*.gcov
+
+--- Generated documentation ---
+docs/_build/
+
+--- User-specific files ---
+*.user
+*.suo
+*.VC.db
+*.VC.VC.opendb
+*.VC.db-shm
+*.VC.db-wal
