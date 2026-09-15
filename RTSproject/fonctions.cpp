@@ -1,10 +1,14 @@
 #include "fonctions.hpp"
 
+
+static std::mt19937& global_rng() {
+	static std::mt19937 rng{ std::random_device{}() };
+	return rng;
+}
+
 int randomizer(int min, int max) {
-	std::random_device rd;
-	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(min, max);
-	return dis(gen);
+	return dis(global_rng());
 }
 
 void gameLoopProie(sf::RenderWindow& window, std::vector<CProie*>& proies) {

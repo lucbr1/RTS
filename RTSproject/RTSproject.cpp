@@ -31,9 +31,9 @@ int main()
 	}
 	sf::Text text(font);
 	text.setString("0");
-	text.setCharacterSize(24);
-	text.setFillColor(sf::Color::Red);
-	text.setStyle(sf::Text::Bold | sf::Text::Underlined);
+	text.setCharacterSize(40);
+	text.setFillColor(sf::Color::White);
+	text.setStyle(sf::Text::Bold);
 
 
 	//redimensionnement de l'image pour qu'elle remplisse la fenêtre
