@@ -88,4 +88,3 @@ docs/_build/
 *.VC.db-shm
 *.VC.db-wal
 RTSproject/CMakePresets.json
-/RTSproject/CMakePresets.json
