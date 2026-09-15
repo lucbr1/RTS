@@ -1,5 +1,7 @@
 ﻿#include <SFML/Graphics.hpp>
-#include "Variable.cpp"
+#include "Proie.hpp"
+#include "Variable.hpp"
+#include "fonctions.hpp"
 #include <iostream>
 
 int main()
@@ -12,19 +14,37 @@ int main()
 
 	sf::Vector2u windowSize = window.getSize();
 
-	//chargement de l'image
-	const sf::Texture texture("paysage.jpg");
+	//chargement de l'image	
+	sf::Texture texture;
+
+	if (!texture.loadFromFile("assets/paysage.jpg"))
+	{
+		std::cerr << "Impossible de charger l'image\n";
+	}
 	sf::Sprite sprite(texture);
+
+
+	sf::Font font;
+	if (!font.openFromFile("assets/arial.ttf"))
+	{
+		std::cerr << "Impossible de charger la police\n";
+	}
+	sf::Text text(font);
+	text.setString("0");
+	text.setCharacterSize(24);
+	text.setFillColor(sf::Color::Red);
+	text.setStyle(sf::Text::Bold | sf::Text::Underlined);
+
 
 	//redimensionnement de l'image pour qu'elle remplisse la fenêtre
 	sprite.setScale({
-		static_cast<float>(windowSize.x) / texture.getSize().x,
-		static_cast<float>(windowSize.y) / texture.getSize().y
+		static_cast<float>(windowWidth) / texture.getSize().x,
+		static_cast<float>(windowHeight) / texture.getSize().y
 		});
 
 	//calcule du nombre de ligne pour couvrir la fenetre et du nombre de vertex pour la grille
-	unsigned int numLinesX = (windowSize.x / cellSize) + 1;
-	unsigned int numLinesY = (windowSize.y / cellSize) + 1;
+	unsigned int numLinesX = (windowWidth / cellSize) + 1;
+	unsigned int numLinesY = (windowHeight / cellSize) + 1;
 	unsigned int totalVertices = (numLinesX + numLinesY) * 2;
 
 	//création d'un tableau de vertex pour la grille
@@ -36,7 +56,7 @@ int main()
 	{
 		float posX = i * cellSize;
 		grid[vertexIndex++] = sf::Vertex{ { posX, 0.f }, gridColor };
-		grid[vertexIndex++] = sf::Vertex{ { posX, float(windowSize.y) }, gridColor };
+		grid[vertexIndex++] = sf::Vertex{ { posX, float(windowHeight) }, gridColor };
 	}
 
 	//génération des lignes horizontales
@@ -44,7 +64,12 @@ int main()
 	{
 		float posY = j * cellSize;
 		grid[vertexIndex++] = sf::Vertex{ { 0.f, posY }, gridColor };
-		grid[vertexIndex++] = sf::Vertex{ { float(windowSize.x), posY }, gridColor };
+		grid[vertexIndex++] = sf::Vertex{ { float(windowWidth), posY }, gridColor };
+	}
+
+	std::vector<CProie*> proies = {};
+	for (size_t i = 0; i < popInitialeH; ++i) {
+		proies.push_back(new CProie());
 	}
 
 	while (window.isOpen())
@@ -53,20 +78,33 @@ int main()
 		while (const std::optional event = window.pollEvent())
 		{
 			if (event->is<sf::Event::Closed>())
+			{
 				window.close();
+			}
+
+			if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
+			{
+				if (keyPressed->code == sf::Keyboard::Key::Space)
+				{
+					gameLoopProie(window, proies);
+				}
+			}
 		}
+		text.setString(std::to_string(proies.size()));
 
 		window.clear();
 
-		sf::CircleShape proie(10.f);
-		proie.setFillColor(sf::Color::Green);
-		proie.setPosition({ 100.f, 100.f });
-
+		
 		window.draw(sprite);
 
 		window.draw(grid);
 
-		window.draw(proie);
+		for (size_t i = 0; i < proies.size(); ++i) {
+			proies[i]->afficher(window);
+		}
+
+		window.draw(text);
+
 
 		window.display();
 	}
