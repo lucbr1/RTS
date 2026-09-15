@@ -11,8 +11,7 @@ class CProie {
 
 	public:
 		CProie();
-		void seDeplacer();
-		std::optional<CProie*> seReproduire();
+		int seDeplacer();
 		void mourir();
 		void afficher(sf::RenderWindow& window);
 		sf::Vector2f getPosition() const { return position; }

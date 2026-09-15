@@ -11,8 +11,9 @@ CProie::CProie() {
 	tempsDeVie = 100;
 }
 
-void CProie::seDeplacer()
+int CProie::seDeplacer()
 {
+	int nbReproductions = 0;
 	int maxX = (windowWidth / cellSize) - 1;
 	int maxY = (windowHeight / cellSize) - 1;
 
@@ -32,9 +33,12 @@ void CProie::seDeplacer()
 
 		position.x = static_cast<float>(x * cellSize);
 		position.y = static_cast<float>(y * cellSize);
+
+		nbReproductions += (randomizer(0, 100) < tauxReproductionH * 100) ? 1 : 0;
 	}
 
 	age += t;
+	return nbReproductions;
 }
 
 
@@ -43,11 +47,4 @@ void CProie::afficher(sf::RenderWindow& window) {
 	proie.setFillColor(sf::Color::Green);
 	proie.setPosition(position);
 	window.draw(proie);
-}
-
-std::optional<CProie*> CProie::seReproduire() {
-	if (randomizer(0, 100) < tauxReproductionH * 100) {
-		return new CProie();
-	}
-	return std::nullopt;
 }
