@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{ca480c5b-4f41-467b-9189-bf3dfa1e2971}</ProjectGuid>
-    <RootNamespace>AlgosRTS</RootNamespace>
+    <ProjectGuid>{9aa21eea-4b92-42c8-a47a-b18ccea84d26}</ProjectGuid>
+    <RootNamespace>LotkaVolterra</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -139,7 +139,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Verhulst.cpp" />
+    <ClCompile Include="LotkaVolterra.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

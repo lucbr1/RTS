@@ -88,3 +88,7 @@ docs/_build/
 *.VC.db-shm
 *.VC.db-wal
 RTSproject/CMakePresets.json
+
+--- Fichiers temporaires Excel ---
+~$*.xlsx
+~$*.xls

@@ -3,5 +3,6 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="AlgosRTS.vcxproj" />
+  <Project Path="LotkaVolterra/LotkaVolterra.vcxproj" Id="9aa21eea-4b92-42c8-a47a-b18ccea84d26" />
+  <Project Path="Verhulst/Verhulst.vcxproj" Id="6b570bc8-27e3-433e-b7b1-686d6a3fa46d" />
 </Solution>
