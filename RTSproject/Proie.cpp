@@ -1,5 +1,4 @@
 #include "Proie.hpp"
-#include <iostream>
 
 CProie::CProie(int x, int y, unsigned int age) : CEntite(age) {
 	unsigned int numLinesX = (windowWidth / cellSize)-1;

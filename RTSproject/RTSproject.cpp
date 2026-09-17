@@ -5,8 +5,6 @@
 
 int main()
 {
-	Etape etape = PROIE_REPRODUCTION_SUR_CASE;
-
 	//creation de la fenêtre
 	sf::RenderWindow window(
 		sf::VideoMode({ windowWidth+placeBoutton, windowHeight }),
@@ -64,6 +62,17 @@ int main()
 	texteBoutton2.setFillColor(sf::Color::Black);
 
 
+	sf::RectangleShape bouton3({ static_cast<float>(placeBoutton - 8), 60.f });
+	bouton3.setPosition({ static_cast<float>(windowWidth + 4), 340.f });
+	bouton3.setFillColor(sf::Color::White);
+	bouton3.setOutlineThickness(3.f);
+	bouton3.setOutlineColor(sf::Color::Black);
+
+	sf::Text texteBoutton3(font, "Predateur 1", 30);
+	texteBoutton3.setPosition({ static_cast<float>(windowWidth + 15), 355.f });
+	texteBoutton3.setFillColor(sf::Color::Black);
+
+
 	CGrille grid(window);
 
 	while (window.isOpen())
@@ -80,7 +89,8 @@ int main()
 			{
 				if (keyPressed->code == sf::Keyboard::Key::Space)
 				{
-					grid.gameLoopProie(etape);
+					grid.gameLoopProie();
+					grid.gameLoopPredateur();
 				}
 			}
 
@@ -96,6 +106,11 @@ int main()
 			else
 				bouton2.setFillColor(sf::Color::White);
 
+			if (bouton3.getGlobalBounds().contains(souris))
+				bouton3.setFillColor(sf::Color(200, 200, 200));
+			else
+				bouton3.setFillColor(sf::Color::White);
+
 			if (const auto* mouseButton =event->getIf<sf::Event::MouseButtonPressed>())
 			{
 				if (mouseButton->button == sf::Mouse::Button::Left)
@@ -103,13 +118,15 @@ int main()
 
 					if (bouton1.getGlobalBounds().contains(souris))
 					{
-						etape = PROIE_REPRODUCTION_SUR_CASE;
-						grid.reset();
+						grid.setEtape(PROIE_REPRODUCTION_SUR_CASE);
 					}
 					if (bouton2.getGlobalBounds().contains(souris))
 					{
-						etape = PROIE_REPRODUCTION_ALEATOIRE;
-						grid.reset();
+						grid.setEtape(PROIE_REPRODUCTION_ALEATOIRE);
+					}
+					if (bouton3.getGlobalBounds().contains(souris))
+					{
+						grid.setEtape(PREDATEUR_SEUL);
 					}
 				}
 			}
@@ -126,6 +143,8 @@ int main()
 		window.draw(texteBoutton1);
 		window.draw(bouton2);
 		window.draw(texteBoutton2);
+		window.draw(bouton3);
+		window.draw(texteBoutton3);
 
 		window.draw(text);
 

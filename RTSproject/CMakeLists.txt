@@ -9,12 +9,20 @@ find_package(SFML 3 COMPONENTS Graphics Window System CONFIG REQUIRED)
 
 add_executable(RTS
     RTSproject.cpp
+    Entite.cpp
+    Entite.hpp
     Proie.cpp
+    Proie.hpp
+    Predateur.cpp
+    Predateur.hpp
+    Grille.cpp
+    Grille.hpp
     fonctions.cpp
- "Grille.cpp" "Entite.cpp")
+    fonctions.hpp
+)
 
 target_link_libraries(RTS
-    PRIVATE
+    PRIVATE 
     SFML::Graphics
     SFML::Window
     SFML::System

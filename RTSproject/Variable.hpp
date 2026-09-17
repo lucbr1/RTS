@@ -18,12 +18,13 @@ inline double tauxMortaliteH = 0.01; // taux de mortalité des proies
 inline double tempsAvantReproductionH = 10; // temps avant reproduction des proies
 
 //Prédateurs
-inline unsigned int popInitialeC = 1; // population initiale de prédateurs
+inline unsigned int popInitialeC = 10; // population initiale de prédateurs
 inline double tauxReproductionC = 0.02; // taux de reproduction des prédateurs
 inline double tauxMortaliteC = 0.05; // taux de mortalité des prédateurs
 inline double tempsAvantReproductionC = 10; // temps avant reproduction des prédateurs
 
 enum Etape {
 	PROIE_REPRODUCTION_SUR_CASE,
-	PROIE_REPRODUCTION_ALEATOIRE
+	PROIE_REPRODUCTION_ALEATOIRE,
+	PREDATEUR_SEUL
 };
