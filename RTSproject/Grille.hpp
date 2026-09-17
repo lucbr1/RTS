@@ -15,4 +15,5 @@ public:
 	void afficher() const;
 	void gameLoopProie(Etape etape);
 	unsigned int getNombreProies() const;
+	void reset();
 };

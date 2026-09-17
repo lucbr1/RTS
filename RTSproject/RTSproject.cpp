@@ -43,17 +43,21 @@ int main()
 
 
 	//creation des bouttons
-	sf::RectangleShape bouton1({ static_cast<float>(placeBoutton), 60.f });
-	bouton1.setPosition({ static_cast<float>(windowWidth), 200.f });
+	sf::RectangleShape bouton1({ static_cast<float>(placeBoutton-8), 60.f });
+	bouton1.setPosition({ static_cast<float>(windowWidth+4), 200.f });
 	bouton1.setFillColor(sf::Color::White);
+	bouton1.setOutlineThickness(3.f);
+	bouton1.setOutlineColor(sf::Color::Black);
 
 	sf::Text texteBoutton1(font, "Proie 1", 30);
 	texteBoutton1.setPosition({ static_cast<float>(windowWidth+15), 215.f });
 	texteBoutton1.setFillColor(sf::Color::Black);
 
-	sf::RectangleShape bouton2({ static_cast<float>(placeBoutton), 60.f });
-	bouton2.setPosition({ static_cast<float>(windowWidth), 270.f });
+	sf::RectangleShape bouton2({ static_cast<float>(placeBoutton-8), 60.f });
+	bouton2.setPosition({ static_cast<float>(windowWidth+4), 270.f });
 	bouton2.setFillColor(sf::Color::White);
+	bouton2.setOutlineThickness(3.f);
+	bouton2.setOutlineColor(sf::Color::Black);
 
 	sf::Text texteBoutton2(font, "Proie 2", 30);
 	texteBoutton2.setPosition({ static_cast<float>(windowWidth + 15), 285.f });
@@ -80,20 +84,32 @@ int main()
 				}
 			}
 
-			if (const auto* mouseButton =
-				event->getIf<sf::Event::MouseButtonPressed>())
+			sf::Vector2f souris = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+
+			if (bouton1.getGlobalBounds().contains(souris))
+				bouton1.setFillColor(sf::Color(200, 200, 200));
+			else
+				bouton1.setFillColor(sf::Color::White);
+
+			if (bouton2.getGlobalBounds().contains(souris))
+				bouton2.setFillColor(sf::Color(200, 200, 200));
+			else
+				bouton2.setFillColor(sf::Color::White);
+
+			if (const auto* mouseButton =event->getIf<sf::Event::MouseButtonPressed>())
 			{
 				if (mouseButton->button == sf::Mouse::Button::Left)
 				{
-					sf::Vector2f souris = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
 					if (bouton1.getGlobalBounds().contains(souris))
 					{
 						etape = PROIE_REPRODUCTION_SUR_CASE;
+						grid.reset();
 					}
 					if (bouton2.getGlobalBounds().contains(souris))
 					{
 						etape = PROIE_REPRODUCTION_ALEATOIRE;
+						grid.reset();
 					}
 				}
 			}

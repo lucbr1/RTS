@@ -43,7 +43,31 @@ CGrille::CGrille(sf::RenderWindow& window) : window(window) {
 		grille[y][x].push_back(new CProie(x, y, 30));
 	}
 }
+void CGrille::reset()
+{
+	// Supprimer toutes les entités
+	for (auto& ligne : grille)
+	{
+		for (auto& cellule : ligne)
+		{
+			for (auto entite : cellule)
+			{
+				delete entite;
+			}
 
+			cellule.clear();
+		}
+	}
+
+	// Recréer les proies initiales
+	for (size_t i = 0; i < popInitialeH; ++i)
+	{
+		int x = randomizer(0, grille[0].size() - 2);
+		int y = randomizer(0, grille.size() - 2);
+
+		grille[y][x].push_back(new CProie(x, y, 30));
+	}
+}
 
 void CGrille::afficher() const {
 	window.draw(vertexGrille);
