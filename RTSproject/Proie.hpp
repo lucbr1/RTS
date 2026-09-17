@@ -2,18 +2,11 @@
 
 #include <SFML/Graphics.hpp>
 #include "Variable.hpp"
+#include "Entite.hpp"
 
-class CProie {
-
-	sf::Vector2f position;
-	unsigned int age;
-	unsigned int tempsDeVie;
-
-	public:
-		CProie();
-		int seDeplacer();
-		void mourir();
-		void afficher(sf::RenderWindow& window);
-		sf::Vector2f getPosition() const { return position; }
-		bool estVivant() const { return age < tempsDeVie; }
+class CProie : public CEntite 
+{
+public:
+	CProie(int x, int y, unsigned int age=0);
+	void afficher(sf::RenderWindow& window) override;
 };

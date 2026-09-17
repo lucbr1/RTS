@@ -1,18 +1,17 @@
 ﻿#include <SFML/Graphics.hpp>
-#include "Proie.hpp"
 #include "Variable.hpp"
-#include "fonctions.hpp"
 #include <iostream>
+#include "Grille.hpp"
 
 int main()
 {
+	Etape etape = PROIE_REPRODUCTION_SUR_CASE;
+
 	//creation de la fenêtre
 	sf::RenderWindow window(
-		sf::VideoMode({ windowWidth, windowHeight }),
+		sf::VideoMode({ windowWidth+placeBoutton, windowHeight }),
 		"RTS"
 	);
-
-	sf::Vector2u windowSize = window.getSize();
 
 	//chargement de l'image	
 	sf::Texture texture;
@@ -42,35 +41,26 @@ int main()
 		static_cast<float>(windowHeight) / texture.getSize().y
 		});
 
-	//calcule du nombre de ligne pour couvrir la fenetre et du nombre de vertex pour la grille
-	unsigned int numLinesX = (windowWidth / cellSize) + 1;
-	unsigned int numLinesY = (windowHeight / cellSize) + 1;
-	unsigned int totalVertices = (numLinesX + numLinesY) * 2;
 
-	//création d'un tableau de vertex pour la grille
-	sf::VertexArray grid(sf::PrimitiveType::Lines, totalVertices);
-	size_t vertexIndex = 0;
+	//creation des bouttons
+	sf::RectangleShape bouton1({ static_cast<float>(placeBoutton), 60.f });
+	bouton1.setPosition({ static_cast<float>(windowWidth), 200.f });
+	bouton1.setFillColor(sf::Color::White);
 
-	//génération des lignes verticales
-	for (size_t i = 0; i < numLinesX; ++i)
-	{
-		float posX = i * cellSize;
-		grid[vertexIndex++] = sf::Vertex{ { posX, 0.f }, gridColor };
-		grid[vertexIndex++] = sf::Vertex{ { posX, float(windowHeight) }, gridColor };
-	}
+	sf::Text texteBoutton1(font, "Proie 1", 30);
+	texteBoutton1.setPosition({ static_cast<float>(windowWidth+15), 215.f });
+	texteBoutton1.setFillColor(sf::Color::Black);
 
-	//génération des lignes horizontales
-	for (size_t j = 0; j < numLinesY; ++j)
-	{
-		float posY = j * cellSize;
-		grid[vertexIndex++] = sf::Vertex{ { 0.f, posY }, gridColor };
-		grid[vertexIndex++] = sf::Vertex{ { float(windowWidth), posY }, gridColor };
-	}
+	sf::RectangleShape bouton2({ static_cast<float>(placeBoutton), 60.f });
+	bouton2.setPosition({ static_cast<float>(windowWidth), 270.f });
+	bouton2.setFillColor(sf::Color::White);
 
-	std::vector<CProie*> proies = {};
-	for (size_t i = 0; i < popInitialeH; ++i) {
-		proies.push_back(new CProie());
-	}
+	sf::Text texteBoutton2(font, "Proie 2", 30);
+	texteBoutton2.setPosition({ static_cast<float>(windowWidth + 15), 285.f });
+	texteBoutton2.setFillColor(sf::Color::Black);
+
+
+	CGrille grid(window);
 
 	while (window.isOpen())
 	{
@@ -86,22 +76,40 @@ int main()
 			{
 				if (keyPressed->code == sf::Keyboard::Key::Space)
 				{
-					gameLoopProie(window, proies);
+					grid.gameLoopProie(etape);
+				}
+			}
+
+			if (const auto* mouseButton =
+				event->getIf<sf::Event::MouseButtonPressed>())
+			{
+				if (mouseButton->button == sf::Mouse::Button::Left)
+				{
+					sf::Vector2f souris = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+
+					if (bouton1.getGlobalBounds().contains(souris))
+					{
+						etape = PROIE_REPRODUCTION_SUR_CASE;
+					}
+					if (bouton2.getGlobalBounds().contains(souris))
+					{
+						etape = PROIE_REPRODUCTION_ALEATOIRE;
+					}
 				}
 			}
 		}
-		text.setString(std::to_string(proies.size()));
+		text.setString(std::to_string(grid.getNombreProies()));
 
-		window.clear();
+		window.clear(sf::Color(180, 180, 180));
 
 		
 		window.draw(sprite);
 
-		window.draw(grid);
-
-		for (size_t i = 0; i < proies.size(); ++i) {
-			proies[i]->afficher(window);
-		}
+		grid.afficher();
+		window.draw(bouton1);
+		window.draw(texteBoutton1);
+		window.draw(bouton2);
+		window.draw(texteBoutton2);
 
 		window.draw(text);
 

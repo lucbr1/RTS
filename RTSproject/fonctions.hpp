@@ -4,5 +4,3 @@
 #include <random>
 
 int randomizer(int min, int max);
-
-void gameLoopProie(sf::RenderWindow& window, std::vector<CProie*>& proies);

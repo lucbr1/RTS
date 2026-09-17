@@ -11,7 +11,7 @@ add_executable(RTS
     RTSproject.cpp
     Proie.cpp
     fonctions.cpp
-)
+ "Grille.cpp" "Entite.cpp")
 
 target_link_libraries(RTS
     PRIVATE
