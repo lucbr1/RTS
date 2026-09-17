@@ -45,5 +45,5 @@ void CPredateur::seDeplacer() {
 	position.x = static_cast<float>(x * cellSize);
 	position.y = static_cast<float>(y * cellSize);
 
-	age++;
+	//age++;
 }

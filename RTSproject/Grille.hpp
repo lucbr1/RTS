@@ -16,7 +16,7 @@ public:
 	void afficher() const;
 	void gameLoopProie();
 	void gameLoopPredateur();
-	unsigned int getNombreProies() const;
+	std::array<unsigned int, 2> getNombreEntites() const;
 	void reset();
 	void setEtape(Etape etape) { this->etape = etape; reset(); }
 };

@@ -26,11 +26,18 @@ int main()
 	{
 		std::cerr << "Impossible de charger la police\n";
 	}
-	sf::Text text(font);
-	text.setString("0");
-	text.setCharacterSize(40);
-	text.setFillColor(sf::Color::White);
-	text.setStyle(sf::Text::Bold);
+	sf::Text textProie(font);
+	textProie.setString("0");
+	textProie.setCharacterSize(40);
+	textProie.setFillColor(sf::Color::White);
+	textProie.setStyle(sf::Text::Bold);
+
+	sf::Text textPredateur(font);
+	textPredateur.setString("0");
+	textPredateur.setCharacterSize(40);
+	textPredateur.setFillColor(sf::Color::Red);
+	textPredateur.setStyle(sf::Text::Bold);
+	textPredateur.setPosition({ 0, 50.f });
 
 
 	//redimensionnement de l'image pour qu'elle remplisse la fenêtre
@@ -131,7 +138,9 @@ int main()
 				}
 			}
 		}
-		text.setString(std::to_string(grid.getNombreProies()));
+		std::array<unsigned int, 2> nombreEntites = grid.getNombreEntites();
+		textProie.setString(std::to_string(nombreEntites[0]));
+		textPredateur.setString(std::to_string(nombreEntites[1]));
 
 		window.clear(sf::Color(180, 180, 180));
 
@@ -146,7 +155,8 @@ int main()
 		window.draw(bouton3);
 		window.draw(texteBoutton3);
 
-		window.draw(text);
+		window.draw(textProie);
+		window.draw(textPredateur);
 
 
 		window.display();

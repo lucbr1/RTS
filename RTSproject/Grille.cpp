@@ -203,6 +203,7 @@ void CGrille::gameLoopPredateur()
 				if (dynamic_cast<CPredateur*>(entite))
 				{
 					entite->seDeplacer();
+
 				}
 			}
 		}
@@ -215,7 +216,8 @@ void CGrille::gameLoopPredateur()
 		{
 			for (auto entite : cellule)
 			{
-				entites.push_back(entite);
+				if(!(dynamic_cast<CPredateur*>(entite)&& !entite->estVivant()))
+					entites.push_back(entite);
 			}
 			cellule.clear();
 		}
@@ -229,8 +231,8 @@ void CGrille::gameLoopPredateur()
 	}
 }
 
-unsigned int CGrille::getNombreProies() const {
-	unsigned int totalProies = 0; 
+std::array<unsigned int, 2> CGrille::getNombreEntites() const {
+	std::array<unsigned int, 2> totalEntites = {0, 0};
 	for (const auto& ligne : grille)
 	{
 		for (const auto& cellule : ligne)
@@ -239,10 +241,14 @@ unsigned int CGrille::getNombreProies() const {
 			{
 				if (dynamic_cast<CProie*>(entite))
 				{
-					totalProies++;
+					totalEntites[0]++;
+				}
+				else if (dynamic_cast<CPredateur*>(entite))
+				{
+					totalEntites[1]++;
 				}
 			}
 		}
 	}
-	return totalProies;
+	return totalEntites;
 }
