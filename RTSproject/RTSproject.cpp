@@ -3,9 +3,25 @@
 #include "Variable.hpp"
 #include "fonctions.hpp"
 #include <iostream>
+#include <fstream>
 
 int main()
 {
+	//Creation du fichier CSV pour stocker les données
+	std::ofstream fichier;
+	unsigned int jour = 0;
+
+	fichier.open("donnees.csv");
+
+	if (!fichier.is_open())
+	{
+		std::cerr << "Erreur lors de l'ouverture du fichier." << std::endl;
+		return 1;
+	}
+
+	fichier << "Jour;Population;\n";
+	fichier << jour << ";" << popInitialeH << ";\n";
+
 	//creation de la fenêtre
 	sf::RenderWindow window(
 		sf::VideoMode({ windowWidth, windowHeight }),
@@ -87,6 +103,8 @@ int main()
 				if (keyPressed->code == sf::Keyboard::Key::Space)
 				{
 					gameLoopProie(window, proies);
+
+					fichier << ++jour * t << ";" << proies.size() << ";\n";
 				}
 			}
 		}
@@ -109,5 +127,6 @@ int main()
 		window.display();
 	}
 
+	fichier.close();
 	return 0;
 }
