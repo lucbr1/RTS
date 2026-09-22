@@ -3,6 +3,7 @@
 #include "fonctions.hpp"
 #include "Proie.hpp"
 #include "Predateur.hpp"
+#include <iostream>
 
 CGrille::CGrille(sf::RenderWindow& window) : window(window) {
 	//calcule du nombre de ligne pour couvrir la fenetre et du nombre de vertex pour la grille
@@ -42,8 +43,9 @@ CGrille::CGrille(sf::RenderWindow& window) : window(window) {
 	for (size_t i = 0; i < popInitialeH; ++i) {
 		int x = randomizer(0, numLinesX - 2);
 		int y = randomizer(0, numLinesY - 2);
-		grille[y][x].push_back(new CProie(x, y, 30));
+		grille[y][x].ajouter(new CProie(x, y, 30));
 	}
+	nbProies = popInitialeH;
 
 	etape = Etape::PROIE_REPRODUCTION_SUR_CASE;
 }
@@ -55,23 +57,30 @@ void CGrille::reset()
 	{
 		for (auto& cellule : ligne)
 		{
-			for (auto entite : cellule)
+			for (auto proie : cellule.proies)
 			{
-				delete entite;
+				delete proie;
 			}
+			for (auto predateur : cellule.predateurs)
+			{
+				delete predateur;
+			}
+			nbProies = 0;
+			nbPredateurs = 0;
+			cellule.vider();
 
-			cellule.clear();
 		}
 	}
-	if (etape == Etape::PREDATEUR_SEUL)
+	if (etape == Etape::PREDATEUR_SEUL_MORT_ALEATOIRE || etape == Etape::PREDATEUR_SEUL_MORT_BASTON)
 	{
 		// Recréer les prédateurs initiaux
 		for (size_t i = 0; i < popInitialeC; ++i)
 		{
 			int x = randomizer(0, grille[0].size() - 2);
 			int y = randomizer(0, grille.size() - 2);
-			grille[y][x].push_back(new CPredateur(x, y, 30));
+			grille[y][x].ajouter(new CPredateur(x, y, 30));
 		}
+		nbPredateurs = popInitialeC;
 	}
 	else
 	{
@@ -80,74 +89,64 @@ void CGrille::reset()
 		{
 			int x = randomizer(0, grille[0].size() - 2);
 			int y = randomizer(0, grille.size() - 2);
-			grille[y][x].push_back(new CProie(x, y, 30));
+			grille[y][x].ajouter(new CProie(x, y, 30));
 		}
+		nbProies = popInitialeH;
 	}
 }
 
 void CGrille::afficher() const {
 	window.draw(vertexGrille);
-	for (auto ligne : grille)
+	for (const auto& ligne : grille)
 	{
-		for (auto cellule : ligne)
+		for (const auto& cellule : ligne)
 		{
-			for (auto entite : cellule)
-			{
-				if (dynamic_cast<CProie*>(entite))
-				{
-					entite->afficher(window);
-					break;
-				}
-				if (dynamic_cast<CPredateur*>(entite))
-				{
-					entite->afficher(window);
-					break;
-				}
-			}
+			if (cellule.proieAffichee)
+				cellule.proieAffichee->afficher(window);
+
+			if (cellule.predateurAffiche)
+				cellule.predateurAffiche->afficher(window);
 		}
 	}
 }
 
+
+void CGrille::gameLoop()
+{
+	if (etape == Etape::PROIE_REPRODUCTION_SUR_CASE || etape == Etape::PROIE_REPRODUCTION_ALEATOIRE)
+		gameLoopProie();
+	else if (etape == Etape::PREDATEUR_SEUL_MORT_ALEATOIRE || etape == Etape::PREDATEUR_SEUL_MORT_BASTON)
+		gameLoopPredateur();
+}
 void CGrille::gameLoopProie()
 {
 	// 1. Déplacement des proies
 	for (auto& ligne : grille)
-	{
 		for (auto& cellule : ligne)
-		{
-			for (auto entite : cellule)
-			{
-				if (dynamic_cast<CProie*>(entite))
-				{
-					entite->seDeplacer();
-				}
-			}
-		}
-	}
+			for (auto proie : cellule.proies)
+				proie->seDeplacer();
 
-	// 2. Replacer les entités dans les bonnes cellules
-	std::vector<CEntite*> entites;
+	// 2. Replacer les proies dans les bonnes cellules
+	std::vector<CProie*> proies;
+	proies.reserve(nbProies);
 
 	for (auto& ligne : grille)
 	{
 		for (auto& cellule : ligne)
 		{
-			for (auto entite : cellule)
-			{
-				entites.push_back(entite);
-			}
-
-			cellule.clear();
+			for (auto proie : cellule.proies)
+				proies.push_back(proie);
+			cellule.vider();
 		}
 	}
 
 	// 3. Replacer chaque entité selon sa nouvelle position
-	for (auto entite : entites)
+	for (auto proie : proies)
 	{
-		int x = static_cast<int>(entite->getPosition().x / cellSize);
-		int y = static_cast<int>(entite->getPosition().y / cellSize);
+		int x = static_cast<int>(proie->getPosition().x / cellSize);
+		int y = static_cast<int>(proie->getPosition().y / cellSize);
 
-		grille[y][x].push_back(entite);
+		grille[y][x].ajouter(proie);
 	}
 	Reproduction();
 }
@@ -155,37 +154,35 @@ void CGrille::gameLoopProie()
 
 
 void CGrille::Reproduction() {
+	std::vector<CEntite*> reproducteurs;
 	for (size_t y = 0; y < grille.size(); ++y)
 	{
 		for (size_t x = 0; x < grille[y].size(); ++x)
 		{
 			auto& cellule = grille[y][x];
-			unsigned int nbProie = 0;
-			for (auto entite : cellule)
+
+			reproducteurs.clear();
+			for (auto proie : cellule.proies)
 			{
-				if (dynamic_cast<CProie*>(entite) && entite->getAge() >= 30 && entite->getTempsAvantReproduction() == 0)
-					nbProie++;
+				if (proie->getAge() >= 30 && proie->getTempsAvantReproduction() == 0)
+					reproducteurs.push_back(proie);
 			}
 
-			nbProie /= 2;
-			for (size_t i = 0; i < nbProie; ++i) {
+			unsigned int nbProie = reproducteurs.size() / 2;
+			size_t idx = 0;
+			for (size_t i = 0; i < nbProie; ++i)
+			{
 				if (etape == PROIE_REPRODUCTION_ALEATOIRE) {
 					int newX = randomizer(0, grille[0].size() - 2);
 					int newY = randomizer(0, grille.size() - 2);
-					grille[newY][newX].push_back(new CProie(newX, newY));
+					grille[newY][newX].ajouter(new CProie(newX, newY));
 				}
-				else
-					cellule.push_back(new CProie(x, y));
-				int nbProieReset = 0;
-				while (nbProieReset < 2) {
-					for (size_t i = 0; i < cellule.size(); ++i) {
-						if (dynamic_cast<CProie*>(cellule[i]) && cellule[i]->getAge() >= 30 && cellule[i]->getTempsAvantReproduction() == 0) {
-							cellule[i]->setTempsAvantReproduction(tempsAvantReproductionH);
-							nbProieReset++;
-							break;
-						}
-					}
+				else {
+					cellule.ajouter(new CProie((int)x, (int)y));
 				}
+				nbProies++;
+				reproducteurs[idx++]->setTempsAvantReproduction(tempsAvantReproductionH);
+				reproducteurs[idx++]->setTempsAvantReproduction(tempsAvantReproductionH);
 			}
 		}
 	}
@@ -195,60 +192,33 @@ void CGrille::gameLoopPredateur()
 {
 	// 1. Déplacement des prédateurs
 	for (auto& ligne : grille)
-	{
 		for (auto& cellule : ligne)
-		{
-			for (auto entite : cellule)
-			{
-				if (dynamic_cast<CPredateur*>(entite))
-				{
-					entite->seDeplacer();
+			for (auto predateur : cellule.predateurs)
+					predateur->seDeplacer();
 
-				}
-			}
-		}
-	}
 	// 2. Replacer les entités dans les bonnes cellules
-	std::vector<CEntite*> entites;
+	std::vector<CPredateur*> predateurs;
+	predateurs.reserve(nbPredateurs);
+
 	for (auto& ligne : grille)
 	{
 		for (auto& cellule : ligne)
 		{
-			for (auto entite : cellule)
+			for (auto predateur : cellule.predateurs)
 			{
-				if(!(dynamic_cast<CPredateur*>(entite)&& !entite->estVivant()))
-					entites.push_back(entite);
+				if(!( !predateur->estVivant()))
+					predateurs.push_back(predateur);
+				if (!predateur->estVivant())
+					nbPredateurs--;
 			}
-			cellule.clear();
+			cellule.vider();
 		}
 	}
 	// 3. Replacer chaque entité selon sa nouvelle position
-	for (auto entite : entites)
+	for (auto predateur : predateurs)
 	{
-		int x = static_cast<int>(entite->getPosition().x / cellSize);
-		int y = static_cast<int>(entite->getPosition().y / cellSize);
-		grille[y][x].push_back(entite);
+		int x = static_cast<int>(predateur->getPosition().x / cellSize);
+		int y = static_cast<int>(predateur->getPosition().y / cellSize);
+		grille[y][x].ajouter(predateur);
 	}
-}
-
-std::array<unsigned int, 2> CGrille::getNombreEntites() const {
-	std::array<unsigned int, 2> totalEntites = {0, 0};
-	for (const auto& ligne : grille)
-	{
-		for (const auto& cellule : ligne)
-		{
-			for (const auto& entite : cellule)
-			{
-				if (dynamic_cast<CProie*>(entite))
-				{
-					totalEntites[0]++;
-				}
-				else if (dynamic_cast<CPredateur*>(entite))
-				{
-					totalEntites[1]++;
-				}
-			}
-		}
-	}
-	return totalEntites;
 }

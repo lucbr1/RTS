@@ -2,6 +2,7 @@
 #include "Variable.hpp"
 #include <iostream>
 #include "Grille.hpp"
+#include <map>
 
 int main()
 {
@@ -40,6 +41,12 @@ int main()
 	textPredateur.setPosition({ 0, 50.f });
 
 
+	sf::Text texteJour(font);
+	texteJour.setString("Jour : 0");
+	texteJour.setCharacterSize(40);
+	texteJour.setStyle(sf::Text::Bold);
+	texteJour.setPosition({ 0, 100.f });
+	texteJour.setFillColor(sf::Color::White);
 	//redimensionnement de l'image pour qu'elle remplisse la fenêtre
 	sprite.setScale({
 		static_cast<float>(windowWidth) / texture.getSize().x,
@@ -79,8 +86,20 @@ int main()
 	texteBoutton3.setPosition({ static_cast<float>(windowWidth + 15), 355.f });
 	texteBoutton3.setFillColor(sf::Color::Black);
 
+	sf::RectangleShape bouton4({ static_cast<float>(placeBoutton - 8), 60.f });
+	bouton4.setPosition({ static_cast<float>(windowWidth + 4), 410.f });
+	bouton4.setFillColor(sf::Color::White);
+	bouton4.setOutlineThickness(3.f);
+	bouton4.setOutlineColor(sf::Color::Black);
+
+	sf::Text texteBoutton4(font, "Predateur 2", 30);
+	texteBoutton4.setPosition({ static_cast<float>(windowWidth + 15), 425.f });
+	texteBoutton4.setFillColor(sf::Color::Black);
+
+	
 
 	CGrille grid(window);
+	unsigned int jour = 0;
 
 	while (window.isOpen())
 	{
@@ -96,8 +115,9 @@ int main()
 			{
 				if (keyPressed->code == sf::Keyboard::Key::Space)
 				{
-					grid.gameLoopProie();
-					grid.gameLoopPredateur();
+					grid.gameLoop();
+
+					jour += t;
 				}
 			}
 
@@ -118,6 +138,11 @@ int main()
 			else
 				bouton3.setFillColor(sf::Color::White);
 
+			if (bouton4.getGlobalBounds().contains(souris))
+				bouton4.setFillColor(sf::Color(200, 200, 200));
+			else
+				bouton4.setFillColor(sf::Color::White);
+
 			if (const auto* mouseButton =event->getIf<sf::Event::MouseButtonPressed>())
 			{
 				if (mouseButton->button == sf::Mouse::Button::Left)
@@ -126,21 +151,29 @@ int main()
 					if (bouton1.getGlobalBounds().contains(souris))
 					{
 						grid.setEtape(PROIE_REPRODUCTION_SUR_CASE);
+						jour = 0;
 					}
 					if (bouton2.getGlobalBounds().contains(souris))
 					{
 						grid.setEtape(PROIE_REPRODUCTION_ALEATOIRE);
+						jour = 0;
 					}
 					if (bouton3.getGlobalBounds().contains(souris))
 					{
-						grid.setEtape(PREDATEUR_SEUL);
+						grid.setEtape(PREDATEUR_SEUL_MORT_ALEATOIRE);
+						jour = 0;
+					}
+					if (bouton4.getGlobalBounds().contains(souris))
+					{
+						grid.setEtape(PREDATEUR_SEUL_MORT_BASTON);
+						jour = 0;
 					}
 				}
 			}
 		}
-		std::array<unsigned int, 2> nombreEntites = grid.getNombreEntites();
-		textProie.setString(std::to_string(nombreEntites[0]));
-		textPredateur.setString(std::to_string(nombreEntites[1]));
+		textProie.setString(std::to_string(grid.getNbProies()));
+		textPredateur.setString(std::to_string(grid.getNbPredateurs()));
+		texteJour.setString("Jour: " + std::to_string(jour));
 
 		window.clear(sf::Color(180, 180, 180));
 
@@ -154,9 +187,12 @@ int main()
 		window.draw(texteBoutton2);
 		window.draw(bouton3);
 		window.draw(texteBoutton3);
+		window.draw(bouton4);
+		window.draw(texteBoutton4);
 
 		window.draw(textProie);
 		window.draw(textPredateur);
+		window.draw(texteJour);
 
 
 		window.display();

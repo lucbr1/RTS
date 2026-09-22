@@ -11,7 +11,7 @@ CProie::CProie(int x, int y, unsigned int age) : CEntite(age) {
 
 
 void CProie::afficher(sf::RenderWindow& window) {
-	sf::CircleShape proie(cellSize/2.0f);
+	static sf::CircleShape proie(cellSize/2.0f);
 	proie.setFillColor(sf::Color::Green);
 	proie.setPosition(position);
 	window.draw(proie);

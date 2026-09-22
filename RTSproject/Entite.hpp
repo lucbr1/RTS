@@ -1,6 +1,8 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include "Variable.hpp"
+
 
 class CEntite {
 protected :
@@ -11,6 +13,7 @@ protected :
 
 public:
 	CEntite(unsigned int age=0);
+	virtual ~CEntite() = default;
 	sf::Vector2f getPosition() const { return position; }
 	bool estVivant() const { return age < tempsDeVie; }
 	virtual void afficher(sf::RenderWindow& window);
@@ -18,4 +21,6 @@ public:
 	unsigned int getAge() const { return age; }
 	unsigned int getTempsAvantReproduction() const { return tempsAvantReproduction; }
 	void setTempsAvantReproduction(unsigned int temps) { tempsAvantReproduction = temps; }
+	virtual TypeEntite getType() const = 0;
 };
+

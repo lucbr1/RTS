@@ -10,4 +10,5 @@ public:
 	CPredateur(int x, int y, unsigned int age = 0);
 	void afficher(sf::RenderWindow& window) override;
 	void seDeplacer() override;
+	TypeEntite getType() const override { return TypeEntite::Predateur; }
 };

@@ -9,4 +9,5 @@ class CProie : public CEntite
 public:
 	CProie(int x, int y, unsigned int age=0);
 	void afficher(sf::RenderWindow& window) override;
+	TypeEntite getType() const override { return TypeEntite::Proie; }
 };

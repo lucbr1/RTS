@@ -11,7 +11,7 @@ CPredateur::CPredateur(int x, int y, unsigned int age) : CEntite(age) {
 }
 
 void CPredateur::afficher(sf::RenderWindow& window) {
-	sf::CircleShape predateur(cellSize / 4.0f);
+	static sf::CircleShape predateur(cellSize / 4.0f);
 	predateur.setFillColor(sf::Color::Red);
 	predateur.setPosition(sf::Vector2f(static_cast<float>(position.x+cellSize/4), static_cast<float>(position.y+cellSize/4)));
 	window.draw(predateur);
