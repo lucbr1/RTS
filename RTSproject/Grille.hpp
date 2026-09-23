@@ -3,7 +3,6 @@
 #include <SFML/Graphics.hpp>
 #include "Variable.hpp"
 #include "Entite.hpp"
-#include <map>
 #include "Cellule.hpp"
 
 class CGrille {
