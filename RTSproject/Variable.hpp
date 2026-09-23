@@ -12,26 +12,30 @@ inline sf::Color gridColor = sf::Color(255, 255, 255); // Couleur des lignes de 
 
 
 //Proies
-inline unsigned int popInitialeH = 10; // population initiale de proies
+inline unsigned int popInitialeH = 100; // population initiale de proies
 inline double tauxReproductionH = 0.05; // taux de reproduction des proies
 inline double tauxMortaliteH = 0.01; // taux de mortalité des proies
 inline double tempsAvantReproductionH = 10; // temps avant reproduction des proies
 
 //Prédateurs
-inline unsigned int popInitialeC = 100000; // population initiale de prédateurs
+inline unsigned int popInitialeC = 20; // population initiale de prédateurs
 inline double tauxReproductionC = 0.02; // taux de reproduction des prédateurs
 inline double tauxMortaliteC = 0.05; // taux de mortalité des prédateurs
 inline double tempsAvantReproductionC = 10; // temps avant reproduction des prédateurs
 
 enum Etape {
-	PROIE_REPRODUCTION_SUR_CASE,
-	PROIE_REPRODUCTION_ALEATOIRE,
-	PREDATEUR_SEUL_MORT_ALEATOIRE,
-	PREDATEUR_SEUL_MORT_BASTON
+	PROIE_SEUL,
+	PREDATEUR_SEUL,
+	PROIE_PREDATEUR
 };
 
 enum TypeEntite
 {
 	Proie,
 	Predateur
+};
+enum Sexe
+{
+	Male,
+	Femelle
 };

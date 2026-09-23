@@ -47,7 +47,7 @@ CGrille::CGrille(sf::RenderWindow& window) : window(window) {
 	}
 	nbProies = popInitialeH;
 
-	etape = Etape::PROIE_REPRODUCTION_SUR_CASE;
+	etape = Etape::PROIE_SEUL;
 }
 
 void CGrille::reset()
@@ -57,21 +57,13 @@ void CGrille::reset()
 	{
 		for (auto& cellule : ligne)
 		{
-			for (auto proie : cellule.proies)
-			{
-				delete proie;
-			}
-			for (auto predateur : cellule.predateurs)
-			{
-				delete predateur;
-			}
 			nbProies = 0;
 			nbPredateurs = 0;
 			cellule.vider();
 
 		}
 	}
-	if (etape == Etape::PREDATEUR_SEUL_MORT_ALEATOIRE || etape == Etape::PREDATEUR_SEUL_MORT_BASTON)
+	if (etape == Etape::PREDATEUR_SEUL || etape == Etape::PROIE_PREDATEUR)
 	{
 		// Recréer les prédateurs initiaux
 		for (size_t i = 0; i < popInitialeC; ++i)
@@ -82,7 +74,7 @@ void CGrille::reset()
 		}
 		nbPredateurs = popInitialeC;
 	}
-	else
+	if (etape == Etape::PROIE_SEUL || etape == Etape::PROIE_PREDATEUR)
 	{
 		// Recréer les proies initiales
 		for (size_t i = 0; i < popInitialeH; ++i)
@@ -113,18 +105,26 @@ void CGrille::afficher() const {
 
 void CGrille::gameLoop()
 {
-	if (etape == Etape::PROIE_REPRODUCTION_SUR_CASE || etape == Etape::PROIE_REPRODUCTION_ALEATOIRE)
+	switch (etape) {
+	case Etape::PROIE_PREDATEUR:
+		gameLoopProiePredateur();
+		break;
+	case Etape::PROIE_SEUL:
 		gameLoopProie();
-	else if (etape == Etape::PREDATEUR_SEUL_MORT_ALEATOIRE || etape == Etape::PREDATEUR_SEUL_MORT_BASTON)
+		break;
+	case Etape::PREDATEUR_SEUL:
 		gameLoopPredateur();
+		break;
+	}
 }
-void CGrille::gameLoopProie()
+
+void CGrille::deplacementProies(bool useSatiete)
 {
 	// 1. Déplacement des proies
 	for (auto& ligne : grille)
 		for (auto& cellule : ligne)
 			for (auto proie : cellule.proies)
-				proie->seDeplacer();
+				proie->seDeplacer(useSatiete);
 
 	// 2. Replacer les proies dans les bonnes cellules
 	std::vector<CProie*> proies;
@@ -136,7 +136,7 @@ void CGrille::gameLoopProie()
 		{
 			for (auto proie : cellule.proies)
 				proies.push_back(proie);
-			cellule.vider();
+			cellule.viderproies();
 		}
 	}
 
@@ -148,6 +148,10 @@ void CGrille::gameLoopProie()
 
 		grille[y][x].ajouter(proie);
 	}
+}
+void CGrille::gameLoopProie()
+{
+	deplacementProies(false);
 	Reproduction();
 }
 
@@ -172,14 +176,8 @@ void CGrille::Reproduction() {
 			size_t idx = 0;
 			for (size_t i = 0; i < nbProie; ++i)
 			{
-				if (etape == PROIE_REPRODUCTION_ALEATOIRE) {
-					int newX = randomizer(0, grille[0].size() - 2);
-					int newY = randomizer(0, grille.size() - 2);
-					grille[newY][newX].ajouter(new CProie(newX, newY));
-				}
-				else {
-					cellule.ajouter(new CProie((int)x, (int)y));
-				}
+				cellule.ajouter(new CProie((int)x, (int)y));
+
 				nbProies++;
 				reproducteurs[idx++]->setTempsAvantReproduction(tempsAvantReproductionH);
 				reproducteurs[idx++]->setTempsAvantReproduction(tempsAvantReproductionH);
@@ -188,30 +186,23 @@ void CGrille::Reproduction() {
 	}
 }
 
-void CGrille::gameLoopPredateur()
+void CGrille::deplacementPredateurs(bool useSatiete)
 {
 	// 1. Déplacement des prédateurs
 	for (auto& ligne : grille)
 		for (auto& cellule : ligne)
 			for (auto predateur : cellule.predateurs)
-					predateur->seDeplacer();
-
+				predateur->seDeplacer(useSatiete);
 	// 2. Replacer les entités dans les bonnes cellules
 	std::vector<CPredateur*> predateurs;
 	predateurs.reserve(nbPredateurs);
-
 	for (auto& ligne : grille)
 	{
 		for (auto& cellule : ligne)
 		{
 			for (auto predateur : cellule.predateurs)
-			{
-				if(!( !predateur->estVivant()))
-					predateurs.push_back(predateur);
-				if (!predateur->estVivant())
-					nbPredateurs--;
-			}
-			cellule.vider();
+				predateurs.push_back(predateur);
+			cellule.viderpredateurs();
 		}
 	}
 	// 3. Replacer chaque entité selon sa nouvelle position
@@ -220,5 +211,213 @@ void CGrille::gameLoopPredateur()
 		int x = static_cast<int>(predateur->getPosition().x / cellSize);
 		int y = static_cast<int>(predateur->getPosition().y / cellSize);
 		grille[y][x].ajouter(predateur);
+	}
+}
+
+void CGrille::gameLoopPredateur()
+{
+	deplacementPredateurs(false);
+	//tue tous les prédateurs sauf un par cellule
+	for (auto& ligne : grille)
+	{
+		for (auto& cellule : ligne)
+		{
+			if (cellule.predateurs.size() == 0)
+				continue;
+			CEntite* predateur = cellule.predateurs[randomizer(0, cellule.predateurs.size() - 1)];
+			nbPredateurs -= cellule.predateurs.size()-1;
+			cellule.viderpredateurs();
+			cellule.ajouter(predateur);
+		}
+	}
+}
+
+/*
+void CGrille::gameLoopProiePredateur()
+{
+	deplacementPredateurs(true);
+	deplacementProies(false);
+	for (auto& ligne : grille)
+		for (auto& cellule : ligne)
+		{
+			//gestion de la reproduction des prédateurs
+			std::vector<CPredateur*> Females;
+			std::vector<CPredateur*> Males;
+			for (auto predateur : cellule.predateurs)
+			{
+				if (!predateur->estVivant())
+				{
+					nbPredateurs--;
+					continue;
+				}
+				if (predateur->getSexe() == Sexe::Male)
+				{
+					Males.push_back(predateur);
+				}
+				else
+				{
+					Females.push_back(predateur);
+				}
+			}
+			//reproduction des prédateurs
+			if (Males.size() > 0 && Females.size() > 0)
+			{
+				CPredateur* Male = Males[randomizer(0, Males.size() - 1)];
+				CPredateur Female = *Females[randomizer(0, Females.size() - 1)];
+
+				if (Male->getAge() >= 30 && Male->getTempsAvantReproduction() == 0 && Female.getAge() >= 30 && Female.getTempsAvantReproduction() == 0)
+				{
+					cellule.ajouter(new CPredateur(static_cast<int>(cellule.predateurs[0]->getPosition().x / cellSize), static_cast<int>(cellule.predateurs[0]->getPosition().y / cellSize)));
+					nbPredateurs++;
+					Male->setTempsAvantReproduction(tempsAvantReproductionC);
+					Female.setTempsAvantReproduction(tempsAvantReproductionC);
+				}
+				nbPredateurs -= Males.size() - 1;
+				cellule.predateurs = Females;
+				cellule.predateurAffiche = Females.empty() ? nullptr : Females[0];
+
+				cellule.ajouter(Male);
+			}
+			else
+			{
+				if (Males.size() > 0)
+				{
+					nbPredateurs -= Males.size() - 1;
+					cellule.viderpredateurs();
+					cellule.ajouter(Males[0]);
+				}
+				else
+				{
+					cellule.predateurs = Females;
+					cellule.predateurAffiche = Females.empty() ? nullptr : Females[0];
+				}
+			}
+
+			// mort des proies par les prédateurs
+			if (cellule.predateurs.size() > 0 && cellule.proies.size() > 0)
+			{
+				std::vector<CProie*> proies= cellule.proies;
+				for(auto predateur : cellule.predateurs)
+				{
+					if (predateur->getSatiete() <5)
+					{
+						proies.erase(proies.begin()+ randomizer(0, proies.size() - 1));
+						nbProies--;
+						predateur->setSatiete(10);
+					}
+					if (proies.size() == 0)
+					{
+						break;
+					}
+				}
+				cellule.proies = proies;
+			}
+		}
+
+}*/
+
+
+void CGrille::gameLoopProiePredateur()
+{
+	nbPredateurs = 0;
+	nbProies = 0;
+	// Déplacement des prédateurs et des proies
+	deplacementPredateurs(true);
+	deplacementProies(false);
+
+	for (auto& ligne : grille)
+	{
+		for (auto& cellule : ligne)
+		{
+			std::vector<CPredateur*> predateursVivants;
+
+			for (auto predateur : cellule.predateurs)
+			{
+				if (predateur->estVivant())
+				{
+					predateursVivants.push_back(predateur);
+				}
+			}
+
+			cellule.predateurs = predateursVivants;
+
+			cellule.predateurAffiche = cellule.predateurs.empty() ? nullptr : cellule.predateurs[0];
+
+			std::vector<CPredateur*> males;
+			std::vector<CPredateur*> femelles;
+
+			for (auto predateur : cellule.predateurs)
+			{
+				if (predateur->getSexe() == Sexe::Male)
+					males.push_back(predateur);
+				else
+					femelles.push_back(predateur);
+			}
+			cellule.viderpredateurs();
+
+			if (!males.empty() && !femelles.empty())
+			{
+				CPredateur* male = males[randomizer(0, static_cast<int>(males.size()) - 1)];
+
+				CPredateur* femelle = femelles[randomizer(0, static_cast<int>(femelles.size()) - 1)];
+
+				
+				for (auto femelle : femelles)
+				{
+					cellule.ajouter(femelle);
+				}
+				cellule.ajouter(male);
+
+				if (male->getAge() >= 30 && male->getTempsAvantReproduction() == 0 &&
+					femelle->getAge() >= 30 && femelle->getTempsAvantReproduction() == 0)
+				{
+					int x = static_cast<int>(male->getPosition().x / cellSize);
+					int y = static_cast<int>(male->getPosition().y / cellSize);
+
+					cellule.ajouter(new CPredateur(x, y));
+
+					male->setTempsAvantReproduction(tempsAvantReproductionC);
+					femelle->setTempsAvantReproduction(tempsAvantReproductionC);
+				}
+			}
+			else
+			{
+				if (!males.empty())
+				{
+					CPredateur* maleGagnant = males[randomizer(0, static_cast<int>(males.size()) - 1)];
+					cellule.ajouter(maleGagnant);
+				}
+				if (!femelles.empty())
+				{
+					for (auto femelle : femelles)
+					{
+						cellule.ajouter(femelle);
+					}
+				}
+			}
+
+
+			if (!cellule.predateurs.empty() && !cellule.proies.empty())
+			{
+				for (auto predateur : cellule.predateurs)
+				{
+					if (cellule.proies.empty())
+						break;
+
+					if (predateur->getSatiete() < 5)
+					{
+						int index = randomizer( 0, static_cast<int>(cellule.proies.size()) - 1 );
+
+						cellule.proies.erase( cellule.proies.begin() + index );
+						predateur->setSatiete(10);
+					}
+				}
+
+				cellule.proieAffichee = cellule.proies.empty() ? nullptr : cellule.proies[0];
+			}
+			nbPredateurs += static_cast<unsigned int>(cellule.predateurs.size());
+
+			nbProies += static_cast<unsigned int>(cellule.proies.size());
+		}
 	}
 }

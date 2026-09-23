@@ -8,8 +8,8 @@ CEntite::CEntite(unsigned int annee) {
 
 	position = sf::Vector2f(static_cast<float>(cellSize * randomizer(0, numLinesX)), static_cast<float>(cellSize * randomizer(0, numLinesY)));
 	age = annee;
-	tempsDeVie = 100;
 	tempsAvantReproduction = 0;
+	sexe = (randomizer(0, 1) == 0) ? Sexe::Male : Sexe::Femelle;
 }
 
 void CEntite::afficher(sf::RenderWindow& window) {
@@ -19,7 +19,7 @@ void CEntite::afficher(sf::RenderWindow& window) {
 	window.draw(proie);
 }
 
-void CEntite::seDeplacer()
+void CEntite::seDeplacer(bool useSatiete)
 {
 	int maxX = (windowWidth / cellSize) - 1;
 	int maxY = (windowHeight / cellSize) - 1;

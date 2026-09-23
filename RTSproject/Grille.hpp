@@ -20,6 +20,11 @@ public:
 	void gameLoop();
 	void gameLoopProie();
 	void gameLoopPredateur();
+	void gameLoopProiePredateur();
+
+
+	void deplacementPredateurs(bool useSatiete);
+	void deplacementProies(bool useSatiete);
 	void reset();
 	void setEtape(Etape etape) { this->etape = etape; reset(); }
 	unsigned int getNbProies() const { return nbProies; }

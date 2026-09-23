@@ -6,7 +6,7 @@ CProie::CProie(int x, int y, unsigned int age) : CEntite(age) {
 
 	position = sf::Vector2f(static_cast<float>(cellSize*x), static_cast<float>(cellSize*y));
 	age = 0;
-	tempsDeVie = 100;
+	mort = false;
 }
 
 

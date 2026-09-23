@@ -7,7 +7,7 @@ CPredateur::CPredateur(int x, int y, unsigned int age) : CEntite(age) {
 
 	position = sf::Vector2f(static_cast<float>(cellSize * x), static_cast<float>(cellSize * y));
 	age = 0;
-	tempsDeVie = 100;
+	mort = false;
 }
 
 void CPredateur::afficher(sf::RenderWindow& window) {
@@ -17,15 +17,16 @@ void CPredateur::afficher(sf::RenderWindow& window) {
 	window.draw(predateur);
 }
 
-void CPredateur::seDeplacer() {
-	//verifie si le predateur meurt maintenant
-	if(randomizer(0, 100)/100.0 < tauxMortaliteC) // 5% de chance de mourir à chaque déplacement
+void CPredateur::seDeplacer(bool useSatiete) {
+	if (useSatiete && satiete <= 0)
 	{
-		// Le predateur meurt
-		tempsDeVie = 0;
+		mort = true;
 		return;
 	}
-
+	else if (useSatiete)
+	{
+		satiete--;
+	}
 	int maxX = (windowWidth / cellSize) - 1;
 	int maxY = (windowHeight / cellSize) - 1;
 
@@ -44,6 +45,7 @@ void CPredateur::seDeplacer() {
 
 	position.x = static_cast<float>(x * cellSize);
 	position.y = static_cast<float>(y * cellSize);
-
-	//age++;
+	if (tempsAvantReproduction > 0)
+		tempsAvantReproduction--;
+	age++;
 }

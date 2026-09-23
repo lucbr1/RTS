@@ -61,7 +61,7 @@ int main()
 	bouton1.setOutlineThickness(3.f);
 	bouton1.setOutlineColor(sf::Color::Black);
 
-	sf::Text texteBoutton1(font, "Proie 1", 30);
+	sf::Text texteBoutton1(font, "Proie", 30);
 	texteBoutton1.setPosition({ static_cast<float>(windowWidth+15), 215.f });
 	texteBoutton1.setFillColor(sf::Color::Black);
 
@@ -71,9 +71,10 @@ int main()
 	bouton2.setOutlineThickness(3.f);
 	bouton2.setOutlineColor(sf::Color::Black);
 
-	sf::Text texteBoutton2(font, "Proie 2", 30);
+	sf::Text texteBoutton2(font, "Predateur", 30);
 	texteBoutton2.setPosition({ static_cast<float>(windowWidth + 15), 285.f });
 	texteBoutton2.setFillColor(sf::Color::Black);
+
 
 
 	sf::RectangleShape bouton3({ static_cast<float>(placeBoutton - 8), 60.f });
@@ -82,21 +83,9 @@ int main()
 	bouton3.setOutlineThickness(3.f);
 	bouton3.setOutlineColor(sf::Color::Black);
 
-	sf::Text texteBoutton3(font, "Predateur 1", 30);
+	sf::Text texteBoutton3(font, "Tout", 30);
 	texteBoutton3.setPosition({ static_cast<float>(windowWidth + 15), 355.f });
 	texteBoutton3.setFillColor(sf::Color::Black);
-
-	sf::RectangleShape bouton4({ static_cast<float>(placeBoutton - 8), 60.f });
-	bouton4.setPosition({ static_cast<float>(windowWidth + 4), 410.f });
-	bouton4.setFillColor(sf::Color::White);
-	bouton4.setOutlineThickness(3.f);
-	bouton4.setOutlineColor(sf::Color::Black);
-
-	sf::Text texteBoutton4(font, "Predateur 2", 30);
-	texteBoutton4.setPosition({ static_cast<float>(windowWidth + 15), 425.f });
-	texteBoutton4.setFillColor(sf::Color::Black);
-
-	
 
 	CGrille grid(window);
 	unsigned int jour = 0;
@@ -115,7 +104,8 @@ int main()
 			{
 				if (keyPressed->code == sf::Keyboard::Key::Space)
 				{
-					grid.gameLoop();
+					for (size_t i = 0; i < t; ++i)
+						grid.gameLoop();
 
 					jour += t;
 				}
@@ -138,10 +128,6 @@ int main()
 			else
 				bouton3.setFillColor(sf::Color::White);
 
-			if (bouton4.getGlobalBounds().contains(souris))
-				bouton4.setFillColor(sf::Color(200, 200, 200));
-			else
-				bouton4.setFillColor(sf::Color::White);
 
 			if (const auto* mouseButton =event->getIf<sf::Event::MouseButtonPressed>())
 			{
@@ -150,22 +136,17 @@ int main()
 
 					if (bouton1.getGlobalBounds().contains(souris))
 					{
-						grid.setEtape(PROIE_REPRODUCTION_SUR_CASE);
+						grid.setEtape(PROIE_SEUL);
 						jour = 0;
 					}
 					if (bouton2.getGlobalBounds().contains(souris))
 					{
-						grid.setEtape(PROIE_REPRODUCTION_ALEATOIRE);
+						grid.setEtape(PREDATEUR_SEUL);
 						jour = 0;
 					}
 					if (bouton3.getGlobalBounds().contains(souris))
 					{
-						grid.setEtape(PREDATEUR_SEUL_MORT_ALEATOIRE);
-						jour = 0;
-					}
-					if (bouton4.getGlobalBounds().contains(souris))
-					{
-						grid.setEtape(PREDATEUR_SEUL_MORT_BASTON);
+						grid.setEtape(PROIE_PREDATEUR);
 						jour = 0;
 					}
 				}
@@ -187,13 +168,10 @@ int main()
 		window.draw(texteBoutton2);
 		window.draw(bouton3);
 		window.draw(texteBoutton3);
-		window.draw(bouton4);
-		window.draw(texteBoutton4);
 
 		window.draw(textProie);
 		window.draw(textPredateur);
 		window.draw(texteJour);
-
 
 		window.display();
 	}

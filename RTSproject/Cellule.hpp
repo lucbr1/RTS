@@ -32,9 +32,18 @@ public:
 
 	void vider()
 	{
+		viderpredateurs();
+		viderproies();
+	}
+
+	void viderproies()
+	{
 		proies.clear();
-		predateurs.clear();
 		proieAffichee = nullptr;
+	}
+	void viderpredateurs()
+	{
+		predateurs.clear();
 		predateurAffiche = nullptr;
 	}
 };
