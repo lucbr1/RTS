@@ -2,10 +2,17 @@
 #include "Variable.hpp"
 #include <iostream>
 #include "Grille.hpp"
-#include <map>
+#include <fstream>
 
 int main()
 {
+	std::ofstream fichier;
+
+	fichier.open("populationsPredateursMortNat.csv");
+
+	fichier << "Jour;Population\n";
+	fichier << 0 << ";" << popInitialeC << "\n";
+
 	//creation de la fenêtre
 	sf::RenderWindow window(
 		sf::VideoMode({ windowWidth+placeBoutton, windowHeight }),
@@ -118,6 +125,8 @@ int main()
 					grid.gameLoop();
 
 					jour += t;
+
+					fichier << jour << ";" << grid.getNbPredateurs() << "\n";
 				}
 			}
 
@@ -197,6 +206,8 @@ int main()
 
 		window.display();
 	}
+
+	fichier.close();
 
 	return 0;
 }
