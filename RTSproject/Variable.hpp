@@ -39,3 +39,6 @@ enum Sexe
 	Male,
 	Femelle
 };
+// Nombre de proies à réserver en mémoire au départ (0 = croissance automatique).
+// Réserver évite la copie du tableau (qui double la mémoire utilisée) quand il grossit.
+inline unsigned long long reservationProies = 8'000'000'000ULL;
