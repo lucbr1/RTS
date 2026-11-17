@@ -21,6 +21,11 @@ add_executable(RTS
     fonctions.hpp
 )
 
+# lecture des fichiers sources en UTF-8 (accents)
+if(MSVC)
+    target_compile_options(RTS PRIVATE /utf-8)
+endif()
+
 target_link_libraries(RTS
     PRIVATE 
     SFML::Graphics

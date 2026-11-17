@@ -87,6 +87,16 @@ int main()
 	texteBoutton3.setPosition({ static_cast<float>(windowWidth + 15), 355.f });
 	texteBoutton3.setFillColor(sf::Color::Black);
 
+	sf::RectangleShape bouton4({ static_cast<float>(placeBoutton - 8), 60.f });
+	bouton4.setPosition({ static_cast<float>(windowWidth + 4), 410.f });
+	bouton4.setFillColor(sf::Color::White);
+	bouton4.setOutlineThickness(3.f);
+	bouton4.setOutlineColor(sf::Color::Black);
+
+	sf::Text texteBoutton4(font, "Anim", 30);
+	texteBoutton4.setPosition({ static_cast<float>(windowWidth + 15), 425.f });
+	texteBoutton4.setFillColor(sf::Color::Black);
+
 	CGrille grid(window);
 	unsigned int jour = 0;
 
@@ -128,6 +138,11 @@ int main()
 			else
 				bouton3.setFillColor(sf::Color::White);
 
+			if (bouton4.getGlobalBounds().contains(souris))
+				bouton4.setFillColor(sf::Color(200, 200, 200));
+			else
+				bouton4.setFillColor(sf::Color::White);
+
 
 			if (const auto* mouseButton =event->getIf<sf::Event::MouseButtonPressed>())
 			{
@@ -149,6 +164,10 @@ int main()
 						grid.setEtape(PROIE_PREDATEUR);
 						jour = 0;
 					}
+					if (bouton4.getGlobalBounds().contains(souris))
+					{
+						playAnimations = !playAnimations;
+					}
 				}
 			}
 		}
@@ -162,12 +181,15 @@ int main()
 		window.draw(sprite);
 
 		grid.afficher();
+		grid.afficherAnimations(font);
 		window.draw(bouton1);
 		window.draw(texteBoutton1);
 		window.draw(bouton2);
 		window.draw(texteBoutton2);
 		window.draw(bouton3);
 		window.draw(texteBoutton3);
+		window.draw(bouton4);
+		window.draw(texteBoutton4);
 
 		window.draw(textProie);
 		window.draw(textPredateur);
