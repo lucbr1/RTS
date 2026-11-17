@@ -7,7 +7,7 @@ inline unsigned int windowHeight = 900; // Hauteur de la fenêtre
 inline unsigned int placeBoutton = 150; // place pour les boutons
 
 //Grille
-inline int cellSize = 5; // Taille des cellules de la grille
+inline int cellSize = 25; // Taille des cellules de la grille
 inline sf::Color gridColor = sf::Color(255, 255, 255); // Couleur des lignes de la grille
 
 
