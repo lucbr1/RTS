@@ -194,12 +194,12 @@ void CGrille::afficherAnimations(const sf::Font& font)
 		}
 		case ProieMangee:
 		{
-			// la biche passe du vert au rouge et rétrécit
+			// la chevreuil passe du vert au rouge et rétrécit
 			float rayon = (taille / 3.f) * (1.f - avancement);
-			sf::CircleShape biche(rayon);
-			biche.setOrigin({ rayon, rayon });
-			biche.setPosition(centre);
-			biche.setFillColor(sf::Color(
+			sf::CircleShape chevreuil(rayon);
+			chevreuil.setOrigin({ rayon, rayon });
+			chevreuil.setPosition(centre);
+			chevreuil.setFillColor(sf::Color(
 				static_cast<std::uint8_t>(150 * avancement),
 				static_cast<std::uint8_t>(255 * (1.f - avancement)),
 				0, alpha));
@@ -212,9 +212,9 @@ void CGrille::afficherAnimations(const sf::Font& font)
 			sang.setFillColor(sf::Color(150, 0, 0, static_cast<std::uint8_t>(alpha / 2)));
 
 			window.draw(sang);
-			window.draw(biche);
+			window.draw(chevreuil);
 
-			texte.setString(L"biche mangée");
+			texte.setString(L"chevreuil mangé");
 			texte.setFillColor(sf::Color(255, 80, 80, alpha));
 			break;
 		}

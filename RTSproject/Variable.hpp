@@ -47,7 +47,7 @@ enum TypeAnimation
 {
 	MortNaturelle,      // loup mort de faim
 	CombatPredateur,    // loup tué par un autre loup
-	ProieMangee,        // biche mangée par un loup
+	ProieMangee,        // chevreuil mangé par un loup
 	NaissanceProie,     // naissance d'un faon
 	NaissancePredateur  // naissance d'un louveteau
 };
