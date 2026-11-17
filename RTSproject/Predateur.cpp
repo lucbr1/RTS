@@ -12,29 +12,29 @@ CPredateur::CPredateur(int x, int y, unsigned int age) : CEntite(age) {
 }
 
 void CPredateur::afficher(sf::RenderWindow& window) {
-	static bool textureProieChargee = false;
-	static sf::Texture textureProie;
-	if (!textureProieChargee) {
-		if (!textureProie.loadFromFile("assets/loup.png")) {
+	static bool texturePredateurChargee = false;
+	static sf::Texture texturePredateur;
+	if (!texturePredateurChargee) {
+		if (!texturePredateur.loadFromFile("assets/loup.png")) {
 			// Gestion de l'erreur si le chargement échoue
 			std::cerr << "Erreur lors du chargement de l'image loup.png" << std::endl;
 		}
-		textureProieChargee = true;
+		texturePredateurChargee = true;
 	}
 
-	static sf::Sprite proie(textureProie);
+	static sf::Sprite predateur(texturePredateur);
 
 	// 1. Récupérer la taille réelle de l'image source (en pixels)
-	sf::FloatRect bounds = proie.getLocalBounds();
+	sf::FloatRect bounds = predateur.getLocalBounds();
 
 	// 2. Calculer l'échelle pour que le sprite fasse exactement "cellSize" de large et de haut
 	float scaleX = cellSize / bounds.size.x;
 	float scaleY = cellSize / bounds.size.y;
-	proie.setScale(sf::Vector2f(scaleX, scaleY));
+	predateur.setScale(sf::Vector2f(scaleX, scaleY));
 
-	// 4. Appliquer la position
-	proie.setPosition(position);
-	window.draw(proie);
+	// 3. Appliquer la position
+	predateur.setPosition(position);
+	window.draw(predateur);
 }
 
 void CPredateur::seDeplacer(bool useSatiete) {
