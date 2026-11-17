@@ -40,17 +40,8 @@ CGrille::CGrille(sf::RenderWindow& window) : window(window) {
 	{
 		ligne.resize(numLinesX);
 	}
-
 	
-	//creation des proies
-	for (size_t i = 0; i < popInitialeH; ++i) {
-		int x = randomizer(0, numLinesX - 2);
-		int y = randomizer(0, numLinesY - 2);
-		grille[y][x].ajouter(new CProie(x, y, 30));
-	}
-	nbProies = popInitialeH;
-
-	etape = Etape::PROIE_SEUL;
+	reset();
 }
 
 void CGrille::reset()
@@ -67,7 +58,7 @@ void CGrille::reset()
 
 		}
 	}
-	if (etape == Etape::PREDATEUR_SEUL || etape == Etape::PROIE_PREDATEUR)
+	if (spawnC)
 	{
 		// Recréer les prédateurs initiaux
 		for (size_t i = 0; i < popInitialeC; ++i)
@@ -78,7 +69,7 @@ void CGrille::reset()
 		}
 		nbPredateurs = popInitialeC;
 	}
-	if (etape == Etape::PROIE_SEUL || etape == Etape::PROIE_PREDATEUR)
+	if (spawnH)
 	{
 		// Recréer les proies initiales
 		for (size_t i = 0; i < popInitialeH; ++i)
@@ -92,7 +83,8 @@ void CGrille::reset()
 }
 
 void CGrille::afficher() const {
-	window.draw(vertexGrille);
+	if (afficherGrille)
+		window.draw(vertexGrille);
 	for (const auto& ligne : grille)
 	{
 		for (const auto& cellule : ligne)
@@ -288,17 +280,12 @@ void CGrille::afficherAnimations(const sf::Font& font)
 
 void CGrille::gameLoop()
 {
-	switch (etape) {
-	case Etape::PROIE_PREDATEUR:
+	if (spawnC && spawnH)
 		gameLoopProiePredateur();
-		break;
-	case Etape::PROIE_SEUL:
-		gameLoopProie();
-		break;
-	case Etape::PREDATEUR_SEUL:
+	else if (spawnC)
 		gameLoopPredateur();
-		break;
-	}
+	else if (spawnH)
+		gameLoopProie();
 }
 
 void CGrille::deplacementProies(bool useSatiete)
@@ -417,90 +404,6 @@ void CGrille::gameLoopPredateur()
 		}
 	}
 }
-
-/*
-void CGrille::gameLoopProiePredateur()
-{
-	deplacementPredateurs(true);
-	deplacementProies(false);
-	for (auto& ligne : grille)
-		for (auto& cellule : ligne)
-		{
-			//gestion de la reproduction des prédateurs
-			std::vector<CPredateur*> Females;
-			std::vector<CPredateur*> Males;
-			for (auto predateur : cellule.predateurs)
-			{
-				if (!predateur->estVivant())
-				{
-					nbPredateurs--;
-					continue;
-				}
-				if (predateur->getSexe() == Sexe::Male)
-				{
-					Males.push_back(predateur);
-				}
-				else
-				{
-					Females.push_back(predateur);
-				}
-			}
-			//reproduction des prédateurs
-			if (Males.size() > 0 && Females.size() > 0)
-			{
-				CPredateur* Male = Males[randomizer(0, Males.size() - 1)];
-				CPredateur Female = *Females[randomizer(0, Females.size() - 1)];
-
-				if (Male->getAge() >= 30 && Male->getTempsAvantReproduction() == 0 && Female.getAge() >= 30 && Female.getTempsAvantReproduction() == 0)
-				{
-					cellule.ajouter(new CPredateur(static_cast<int>(cellule.predateurs[0]->getPosition().x / cellSize), static_cast<int>(cellule.predateurs[0]->getPosition().y / cellSize)));
-					nbPredateurs++;
-					Male->setTempsAvantReproduction(tempsAvantReproductionC);
-					Female.setTempsAvantReproduction(tempsAvantReproductionC);
-				}
-				nbPredateurs -= Males.size() - 1;
-				cellule.predateurs = Females;
-				cellule.predateurAffiche = Females.empty() ? nullptr : Females[0];
-
-				cellule.ajouter(Male);
-			}
-			else
-			{
-				if (Males.size() > 0)
-				{
-					nbPredateurs -= Males.size() - 1;
-					cellule.viderpredateurs();
-					cellule.ajouter(Males[0]);
-				}
-				else
-				{
-					cellule.predateurs = Females;
-					cellule.predateurAffiche = Females.empty() ? nullptr : Females[0];
-				}
-			}
-
-			// mort des proies par les prédateurs
-			if (cellule.predateurs.size() > 0 && cellule.proies.size() > 0)
-			{
-				std::vector<CProie*> proies= cellule.proies;
-				for(auto predateur : cellule.predateurs)
-				{
-					if (predateur->getSatiete() <5)
-					{
-						proies.erase(proies.begin()+ randomizer(0, proies.size() - 1));
-						nbProies--;
-						predateur->setSatiete(10);
-					}
-					if (proies.size() == 0)
-					{
-						break;
-					}
-				}
-				cellule.proies = proies;
-			}
-		}
-
-}*/
 
 
 void CGrille::gameLoopProiePredateur()

@@ -19,6 +19,8 @@ add_executable(RTS
     Grille.hpp
     fonctions.cpp
     fonctions.hpp
+    UI.cpp
+    UI.hpp
 )
 
 # lecture des fichiers sources en UTF-8 (accents)
