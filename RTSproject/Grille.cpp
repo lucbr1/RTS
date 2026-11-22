@@ -326,7 +326,7 @@ void CGrille::gameLoopProie()
 }
 
 
-
+// TODO Faire une reproduction particulière pour les prédateurs
 void CGrille::Reproduction() {
 	std::vector<CEntite*> reproducteurs;
 	for (size_t y = 0; y < grille.size(); ++y)
@@ -385,6 +385,8 @@ void CGrille::deplacementPredateurs(bool useSatiete)
 	}
 }
 
+
+// Todo Choisir entre reproduction et combat entre prédateurs selon les variables
 void CGrille::gameLoopPredateur()
 {
 	deplacementPredateurs(false);
@@ -520,4 +522,5 @@ void CGrille::gameLoopProiePredateur()
 			nbProies += static_cast<unsigned int>(cellule.proies.size());
 		}
 	}
+	Reproduction();
 }

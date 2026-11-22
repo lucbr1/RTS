@@ -7,7 +7,6 @@ CPredateur::CPredateur(int x, int y, unsigned int age) : CEntite(age) {
 	unsigned int numLinesY = (windowHeight / cellSize) - 1;
 
 	position = sf::Vector2f(static_cast<float>(cellSize * x), static_cast<float>(cellSize * y));
-	age = 0;
 	mort = false;
 }
 
