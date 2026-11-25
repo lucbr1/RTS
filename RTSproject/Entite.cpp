@@ -19,7 +19,7 @@ void CEntite::afficher(sf::RenderWindow& window) {
 	window.draw(proie);
 }
 
-void CEntite::seDeplacer(bool useSatiete)
+void CEntite::seDeplacer()
 {
 	int maxX = (windowWidth / cellSize) - 1;
 	int maxY = (windowHeight / cellSize) - 1;

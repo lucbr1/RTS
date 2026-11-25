@@ -6,12 +6,6 @@
 
 ## 1. Bugs à corriger en priorité
 
-### Âge initial écrasé
-- `reset()` crée les entités avec `age = 30` (`Grille.cpp:68`, `:79`)
-- Mais `CProie` / `CPredateur` remettent `age = 0` (`Proie.cpp:9`, `Predateur.cpp:10`)
-- ➜ aucune entité ne peut se reproduire avant 30 jours (contraire au TP 3.2 : *« toutes les proies ont déjà 30 jours »*)
-- **Fix** : supprimer `age = 0;` dans les deux constructeurs
-
 ### Proies qui ne se reproduisent plus en mode couplé
 - `Reproduction()` n'est appelée que dans `gameLoopProie()` (`Grille.cpp:325`)
 - `gameLoopProiePredateur()` ne l'appelle jamais

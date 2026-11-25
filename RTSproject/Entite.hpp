@@ -18,7 +18,7 @@ public:
 	sf::Vector2f getPosition() const { return position; }
 	bool estVivant() const { return !mort; }
 	virtual void afficher(sf::RenderWindow& window);
-	virtual void seDeplacer(bool useSatiete = true);
+	virtual void seDeplacer();
 	unsigned int getAge() const { return age; }
 	unsigned int getTempsAvantReproduction() const { return tempsAvantReproduction; }
 	void setTempsAvantReproduction(unsigned int temps) { tempsAvantReproduction = temps; }

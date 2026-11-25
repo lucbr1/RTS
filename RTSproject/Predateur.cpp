@@ -8,6 +8,7 @@ CPredateur::CPredateur(int x, int y, unsigned int age) : CEntite(age) {
 
 	position = sf::Vector2f(static_cast<float>(cellSize * x), static_cast<float>(cellSize * y));
 	mort = false;
+	satiete = tempsMortDeFaimC;
 }
 
 void CPredateur::afficher(sf::RenderWindow& window) {
@@ -36,13 +37,13 @@ void CPredateur::afficher(sf::RenderWindow& window) {
 	window.draw(predateur);
 }
 
-void CPredateur::seDeplacer(bool useSatiete) {
-	if (useSatiete && satiete <= 0)
+void CPredateur::seDeplacer() {
+	if (meurtDeFaimC && satiete <= 0)
 	{
 		mort = true;
 		return;
 	}
-	else if (useSatiete)
+	else if (meurtDeFaimC)
 	{
 		satiete--;
 	}

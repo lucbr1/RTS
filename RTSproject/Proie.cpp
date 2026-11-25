@@ -1,4 +1,5 @@
 #include "Proie.hpp"
+#include "fonctions.hpp"
 #include <iostream>
 
 CProie::CProie(int x, int y, unsigned int age) : CEntite(age) {
@@ -7,8 +8,41 @@ CProie::CProie(int x, int y, unsigned int age) : CEntite(age) {
 
 	position = sf::Vector2f(static_cast<float>(cellSize*x), static_cast<float>(cellSize*y));
 	mort = false;
+	satiete = tempsMortDeFaimH;
 }
 
+void CProie::seDeplacer() {
+	if (meurtDeFaimH && satiete <= 0)
+	{
+		mort = true;
+		return;
+	}
+	else if (meurtDeFaimH)
+	{
+		satiete--;
+	}
+	int maxX = (windowWidth / cellSize) - 1;
+	int maxY = (windowHeight / cellSize) - 1;
+
+
+	int dx = randomizer(-1, 1);
+	int dy = randomizer(-1, 1);
+
+	int x = static_cast<int>(position.x / cellSize);
+	int y = static_cast<int>(position.y / cellSize);
+
+	x += dx;
+	y += dy;
+
+	x = (x % (maxX + 1) + (maxX + 1)) % (maxX + 1);
+	y = (y % (maxY + 1) + (maxY + 1)) % (maxY + 1);
+
+	position.x = static_cast<float>(x * cellSize);
+	position.y = static_cast<float>(y * cellSize);
+	if (tempsAvantReproduction > 0)
+		tempsAvantReproduction--;
+	age++;
+}
 
 void CProie::afficher(sf::RenderWindow& window) {
 	static bool textureProieChargee = false;

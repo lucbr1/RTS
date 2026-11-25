@@ -32,8 +32,8 @@ public:
 	void gameLoopProiePredateur();
 
 
-	void deplacementPredateurs(bool useSatiete);
-	void deplacementProies(bool useSatiete);
+	void deplacementPredateurs();
+	void deplacementProies();
 	void reset();
 	unsigned int getNbProies() const { return nbProies; }
 	unsigned int getNbPredateurs() const { return nbPredateurs; }

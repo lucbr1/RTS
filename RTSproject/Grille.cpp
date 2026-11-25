@@ -10,7 +10,7 @@
 
 CGrille::CGrille(sf::RenderWindow& window) : window(window) {
 	//calcule du nombre de ligne pour couvrir la fenetre et du nombre de vertex pour la grille
-	const unsigned int numLinesX = (windowWidth / cellSize) + 1;
+	const unsigned int numLinesX = (windowWidth / cellSize);
 	const unsigned int numLinesY = (windowHeight / cellSize) + 1;
 	const unsigned int totalVertices = (numLinesX + numLinesY) * 2;
 
@@ -288,13 +288,13 @@ void CGrille::gameLoop()
 		gameLoopProie();
 }
 
-void CGrille::deplacementProies(bool useSatiete)
+void CGrille::deplacementProies()
 {
 	// 1. Déplacement des proies
 	for (auto& ligne : grille)
 		for (auto& cellule : ligne)
 			for (auto proie : cellule.proies)
-				proie->seDeplacer(useSatiete);
+				proie->seDeplacer();
 
 	// 2. Replacer les proies dans les bonnes cellules
 	std::vector<CProie*> proies;
@@ -321,10 +321,27 @@ void CGrille::deplacementProies(bool useSatiete)
 }
 void CGrille::gameLoopProie()
 {
-	deplacementProies(false);
+	deplacementProies();
+	for (auto& ligne : grille)
+	{
+		for (auto& cellule : ligne)
+		{
+			std::vector<CProie*> proiesVivants;
+			for (auto proie : cellule.proies)
+			{
+				if (proie->estVivant())
+				{
+					proiesVivants.push_back(proie);
+				}
+				else
+				{
+					ajouterAnimation(MortNaturelle, proie->getPosition());
+				}
+			}
+		}
+	}
 	Reproduction();
 }
-
 
 // TODO Faire une reproduction particulière pour les prédateurs
 void CGrille::Reproduction() {
@@ -350,20 +367,23 @@ void CGrille::Reproduction() {
 				ajouterAnimation(NaissanceProie, sf::Vector2f(static_cast<float>(x * cellSize), static_cast<float>(y * cellSize)));
 
 				nbProies++;
-				reproducteurs[idx++]->setTempsAvantReproduction(tempsAvantReproductionH);
-				reproducteurs[idx++]->setTempsAvantReproduction(tempsAvantReproductionH);
+				if (estCeQueTempsAvantReproductionH)
+				{
+					reproducteurs[idx++]->setTempsAvantReproduction(tempsAvantReproductionH);
+					reproducteurs[idx++]->setTempsAvantReproduction(tempsAvantReproductionH);
+				}
 			}
 		}
 	}
 }
 
-void CGrille::deplacementPredateurs(bool useSatiete)
+void CGrille::deplacementPredateurs()
 {
 	// 1. Déplacement des prédateurs
 	for (auto& ligne : grille)
 		for (auto& cellule : ligne)
 			for (auto predateur : cellule.predateurs)
-				predateur->seDeplacer(useSatiete);
+				predateur->seDeplacer();
 	// 2. Replacer les entités dans les bonnes cellules
 	std::vector<CPredateur*> predateurs;
 	predateurs.reserve(nbPredateurs);
@@ -389,12 +409,25 @@ void CGrille::deplacementPredateurs(bool useSatiete)
 // Todo Choisir entre reproduction et combat entre prédateurs selon les variables
 void CGrille::gameLoopPredateur()
 {
-	deplacementPredateurs(false);
+	deplacementPredateurs();
 	//tue tous les prédateurs sauf un par cellule
 	for (auto& ligne : grille)
 	{
 		for (auto& cellule : ligne)
 		{
+			std::vector<CPredateur*> predateursVivants;
+			for (auto predateur : cellule.predateurs)
+			{
+				if (predateur->estVivant())
+				{
+					predateursVivants.push_back(predateur);
+				}
+				else
+				{
+					ajouterAnimation(MortNaturelle, predateur->getPosition());
+				}
+			}
+			cellule.predateurs = predateursVivants;
 			if (cellule.predateurs.size() == 0)
 				continue;
 			if (cellule.predateurs.size() > 1)
@@ -413,8 +446,8 @@ void CGrille::gameLoopProiePredateur()
 	nbPredateurs = 0;
 	nbProies = 0;
 	// Déplacement des prédateurs et des proies
-	deplacementPredateurs(true);
-	deplacementProies(false);
+	deplacementPredateurs();
+	deplacementProies();
 
 	for (auto& ligne : grille)
 	{
@@ -476,8 +509,11 @@ void CGrille::gameLoopProiePredateur()
 					cellule.ajouter(new CPredateur(x, y));
 					ajouterAnimation(NaissancePredateur, male->getPosition());
 
-					male->setTempsAvantReproduction(tempsAvantReproductionC);
-					femelle->setTempsAvantReproduction(tempsAvantReproductionC);
+					if (estCeQueTempsAvantReproductionH) 
+					{
+						male->setTempsAvantReproduction(tempsAvantReproductionC);
+						femelle->setTempsAvantReproduction(tempsAvantReproductionC);
+					}
 				}
 			}
 			else
@@ -504,7 +540,7 @@ void CGrille::gameLoopProiePredateur()
 					if (cellule.proies.empty())
 						break;
 
-					if (predateur->getSatiete() < 5)
+					if (predateur->getSatiete() < tempsMortDeFaimC/2)
 					{
 						int index = randomizer( 0, static_cast<int>(cellule.proies.size()) - 1 );
 
