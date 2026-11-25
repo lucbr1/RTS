@@ -28,17 +28,31 @@ CGrille::CGrille(sf::RenderWindow& window) : window(window)
 	reset();
 }
 
-void CGrille::reset()
+CGrille::~CGrille()
 {
-	animations.clear();
+	vider();
+}
+
+void CGrille::vider()
+{
 	for (auto& ligne : grille)
 	{
 		for (auto& cellule : ligne)
 		{
+			for (auto proie : cellule.proies)
+				delete proie;
+			for (auto predateur : cellule.predateurs)
+				delete predateur;
 			cellule.proies.clear();
 			cellule.predateurs.clear();
 		}
 	}
+}
+
+void CGrille::reset()
+{
+	animations.clear();
+	vider();
 
 	const int xMax = static_cast<int>(grille[0].size()) - 1;
 	const int yMax = static_cast<int>(grille.size()) - 1;
@@ -322,18 +336,25 @@ void CGrille::retirerMorts(CCellule& cellule)
 {
 	auto& proies = cellule.proies;
 	proies.erase(std::remove_if(proies.begin(), proies.end(),
-		[](const CProie* p) { return !p->estVivant(); }), proies.end());
+		[](CProie* p) {
+			if (p->estVivant())
+				return false;
+			delete p;
+			return true;
+		}), proies.end());
 
 	auto& predateurs = cellule.predateurs;
 	predateurs.erase(std::remove_if(predateurs.begin(), predateurs.end(),
-		[this](const CPredateur* p) {
+		[this](CPredateur* p) {
 			if (p->estVivant())
 				return false;
 			ajouterAnimation(MortNaturelle, p->getPosition());
+			delete p;
 			return true;
 		}), predateurs.end());
 }
 
+// chaque paire de proies en âge de se reproduire a une probabilité tauxReproductionH de donner un faon
 void CGrille::reproductionProies()
 {
 	std::vector<CProie*> reproducteurs;
@@ -350,6 +371,9 @@ void CGrille::reproductionProies()
 
 			for (size_t i = 0; i + 1 < reproducteurs.size(); i += 2)
 			{
+				if (randomReel() >= tauxReproductionH)
+					continue;
+
 				cellule.proies.push_back(new CProie(static_cast<int>(x), static_cast<int>(y)));
 				ajouterAnimation(NaissanceProie, reproducteurs[i]->getPosition());
 
@@ -372,7 +396,7 @@ void CGrille::gameLoopProie()
 	reproductionProies();
 }
 
-// un seul prédateur survit par cellule
+// si les prédateurs se battent, un seul survit par cellule
 void CGrille::gameLoopPredateur()
 {
 	deplacement();
@@ -381,17 +405,21 @@ void CGrille::gameLoopPredateur()
 		for (auto& cellule : ligne)
 		{
 			retirerMorts(cellule);
-			if (cellule.predateurs.size() <= 1)
+			if (!seBatteC || cellule.predateurs.size() <= 1)
 				continue;
 
 			ajouterAnimation(CombatPredateur, cellule.predateurs[0]->getPosition());
 			CPredateur* gagnant = cellule.predateurs[randomizer(0, static_cast<int>(cellule.predateurs.size()) - 1)];
+			for (auto predateur : cellule.predateurs)
+				if (predateur != gagnant)
+					delete predateur;
 			cellule.predateurs = { gagnant };
 		}
 	}
 }
 
-// les mâles se battent (un seul survit), puis le gagnant peut se reproduire avec une femelle
+// avec combat : les mâles se battent, le gagnant peut se reproduire avec une femelle
+// sans combat : chaque mâle est associé à une femelle et le couple peut se reproduire
 void CGrille::combatEtReproductionPredateurs(CCellule& cellule, int x, int y)
 {
 	std::vector<CPredateur*> males;
@@ -399,30 +427,46 @@ void CGrille::combatEtReproductionPredateurs(CCellule& cellule, int x, int y)
 	for (auto predateur : cellule.predateurs)
 		(predateur->getSexe() == Sexe::Male ? males : femelles).push_back(predateur);
 
-	cellule.predateurs = femelles;
+	if (!seBatteC)
+	{
+		size_t nbCouples = std::min(males.size(), femelles.size());
+		for (size_t i = 0; i < nbCouples; ++i)
+			naissancePredateur(cellule, males[i], femelles[i], x, y);
+		return;
+	}
+
 	if (males.empty())
 		return;
 
-	if (males.size() > 1)
-		ajouterAnimation(CombatPredateur, males[0]->getPosition());
-
 	CPredateur* male = males[randomizer(0, static_cast<int>(males.size()) - 1)];
+	if (males.size() > 1)
+	{
+		ajouterAnimation(CombatPredateur, male->getPosition());
+		for (auto perdant : males)
+			if (perdant != male)
+				delete perdant;
+	}
+
+	cellule.predateurs = femelles;
 	cellule.predateurs.push_back(male);
 
-	if (femelles.empty())
+	if (!femelles.empty())
+		naissancePredateur(cellule, male, femelles[randomizer(0, static_cast<int>(femelles.size()) - 1)], x, y);
+}
+
+// le couple a une probabilité tauxReproductionC de donner un louveteau
+void CGrille::naissancePredateur(CCellule& cellule, CPredateur* male, CPredateur* femelle, int x, int y)
+{
+	if (!male->peutSeReproduire() || !femelle->peutSeReproduire() || randomReel() >= tauxReproductionC)
 		return;
 
-	CPredateur* femelle = femelles[randomizer(0, static_cast<int>(femelles.size()) - 1)];
-	if (male->peutSeReproduire() && femelle->peutSeReproduire())
-	{
-		cellule.predateurs.push_back(new CPredateur(x, y));
-		ajouterAnimation(NaissancePredateur, male->getPosition());
+	cellule.predateurs.push_back(new CPredateur(x, y));
+	ajouterAnimation(NaissancePredateur, male->getPosition());
 
-		if (estCeQueTempsAvantReproductionC)
-		{
-			male->setTempsAvantReproduction(tempsAvantReproductionC);
-			femelle->setTempsAvantReproduction(tempsAvantReproductionC);
-		}
+	if (estCeQueTempsAvantReproductionC)
+	{
+		male->setTempsAvantReproduction(tempsAvantReproductionC);
+		femelle->setTempsAvantReproduction(tempsAvantReproductionC);
 	}
 }
 
@@ -438,6 +482,7 @@ void CGrille::predation(CCellule& cellule)
 		{
 			int index = randomizer(0, static_cast<int>(cellule.proies.size()) - 1);
 			ajouterAnimation(ProieMangee, cellule.proies[index]->getPosition());
+			delete cellule.proies[index];
 			cellule.proies.erase(cellule.proies.begin() + index);
 			predateur->setSatiete(tempsMortDeFaimC);
 		}

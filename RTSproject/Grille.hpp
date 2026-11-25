@@ -21,9 +21,11 @@ class CGrille {
 	unsigned int nbPredateurs = 0;
 
 	void ajouterAnimation(TypeAnimation type, sf::Vector2f position);
+	void vider();
 	void deplacement();
 	void retirerMorts(CCellule& cellule);
 	void combatEtReproductionPredateurs(CCellule& cellule, int x, int y);
+	void naissancePredateur(CCellule& cellule, CPredateur* male, CPredateur* femelle, int x, int y);
 	void predation(CCellule& cellule);
 	void reproductionProies();
 	void compterPopulations();
@@ -34,6 +36,10 @@ class CGrille {
 
 public:
 	CGrille(sf::RenderWindow& window);
+	~CGrille();
+	CGrille(const CGrille&) = delete; // la grille possède ses entités (new / delete)
+	CGrille& operator=(const CGrille&) = delete;
+
 	void reset();
 	void gameLoop();
 	void afficher() const;

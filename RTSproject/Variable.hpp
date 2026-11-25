@@ -17,7 +17,7 @@ inline unsigned int ageMinReproduction = 30; // jours
 //Proies
 inline bool spawnH = true;
 inline unsigned int popInitialeH = 100;
-inline double tauxReproductionH = 0.05;
+inline double tauxReproductionH = 0.75;
 inline double tauxMortaliteH = 0.01;
 inline bool estCeQueTempsAvantReproductionH = true;
 inline unsigned int tempsAvantReproductionH = 10; // jours
@@ -28,7 +28,7 @@ inline unsigned int tempsMortDeFaimH = 10; // jours sans manger avant de mourir
 inline bool spawnC = true;
 inline unsigned int popInitialeC = 200;
 inline double tauxReproductionC = 0.02;
-inline double tauxMortaliteC = 0.05;
+inline double tauxMortaliteC = 0.8;
 inline bool estCeQueTempsAvantReproductionC = true;
 inline unsigned int tempsAvantReproductionC = 10; // jours
 inline bool meurtDeFaimC = false;

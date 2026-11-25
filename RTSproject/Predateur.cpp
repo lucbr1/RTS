@@ -12,14 +12,12 @@ const sf::Texture& CPredateur::getTexture() const
 
 void CPredateur::seDeplacer()
 {
-	if (meurtDeFaimC)
+	if (satiete == 0 && meurtDeFaimC)
 	{
-		if (satiete == 0)
-		{
-			mort = true;
-			return;
-		}
-		satiete--;
+		mort = true;
+		return;
 	}
+	if (satiete > 0)
+		satiete--;
 	CEntite::seDeplacer();
 }
