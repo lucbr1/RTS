@@ -21,6 +21,8 @@ add_executable(RTS
     fonctions.hpp
     UI.cpp
     UI.hpp
+    Graphique.cpp
+    Graphique.hpp
 )
 
 # lecture des fichiers sources en UTF-8 (accents)
