@@ -1,4 +1,5 @@
 #include "Proie.hpp"
+#include "fonctions.hpp"
 
 CProie::CProie(int x, int y, unsigned int age) : CEntite(x, y, age), satiete(tempsMortDeFaimH)
 {
@@ -16,10 +17,15 @@ void CProie::seDeplacer()
 	{
 		if (satiete == 0)
 		{
-			mort = true;
+			causeMort = CauseMort::Faim;
 			return;
 		}
 		satiete--;
+	}
+	if (mortNaturelleH && randomReel() < tauxMortaliteH)
+	{
+		causeMort = CauseMort::Naturelle;
+		return;
 	}
 	CEntite::seDeplacer();
 }

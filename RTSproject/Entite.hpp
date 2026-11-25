@@ -8,7 +8,7 @@ class CEntite {
 protected:
 	sf::Vector2f position;
 	unsigned int age;
-	bool mort = false;
+	CauseMort causeMort = CauseMort::Aucune;
 	unsigned int tempsAvantReproduction = 0;
 	Sexe sexe;
 
@@ -22,7 +22,8 @@ public:
 	virtual void seDeplacer();
 
 	sf::Vector2f getPosition() const { return position; }
-	bool estVivant() const { return !mort; }
+	bool estVivant() const { return causeMort == CauseMort::Aucune; }
+	CauseMort getCauseMort() const { return causeMort; }
 	unsigned int getAge() const { return age; }
 	Sexe getSexe() const { return sexe; }
 	bool peutSeReproduire() const { return age >= ageMinReproduction && tempsAvantReproduction == 0; }

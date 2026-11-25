@@ -18,7 +18,8 @@ inline unsigned int ageMinReproduction = 30; // jours
 inline bool spawnH = true;
 inline unsigned int popInitialeH = 100;
 inline double tauxReproductionH = 0.75;
-inline double tauxMortaliteH = 0.01;
+inline double tauxMortaliteH = 0.1;
+inline bool mortNaturelleH = true; // les proies peuvent mourir aléatoirement de vieillesse
 inline bool estCeQueTempsAvantReproductionH = true;
 inline unsigned int tempsAvantReproductionH = 10; // jours
 inline bool meurtDeFaimH = false;
@@ -28,7 +29,8 @@ inline unsigned int tempsMortDeFaimH = 10; // jours sans manger avant de mourir
 inline bool spawnC = true;
 inline unsigned int popInitialeC = 200;
 inline double tauxReproductionC = 0.02;
-inline double tauxMortaliteC = 0.8;
+inline double tauxMortaliteC = 0.1;
+inline bool mortNaturelleC = true; // les predateurs peuvent mourir aléatoirement de vieillesse
 inline bool estCeQueTempsAvantReproductionC = true;
 inline unsigned int tempsAvantReproductionC = 10; // jours
 inline bool meurtDeFaimC = false;
@@ -42,11 +44,21 @@ inline bool playAnimations = true;
 
 enum TypeAnimation
 {
-	MortNaturelle,      // loup mort de faim
+	MortDeFaimProie,
+	MortDeFaimPredateur,
+	MortNaturelleProie,
+	MortNaturellePredateur,
 	CombatPredateur,    // loup tué par un autre loup
 	ProieMangee,        // chevreuil mangé par un loup
 	NaissanceProie,     // naissance d'un faon
 	NaissancePredateur  // naissance d'un louveteau
+};
+
+enum class CauseMort
+{
+	Aucune,
+	Faim,
+	Naturelle
 };
 
 enum Sexe

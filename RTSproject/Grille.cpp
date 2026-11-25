@@ -127,15 +127,16 @@ void CGrille::afficherAnimations(const sf::Font& font)
 
 		switch (animation.type)
 		{
-		case MortNaturelle:
+		case MortDeFaimProie:
+		case MortDeFaimPredateur:
 		{
-			// le loup devient gris, rétrécit et disparait
+			// l'animal devient gris, rétrécit et disparait
 			float rayon = (taille / 4.f) * (1.f - avancement);
-			sf::CircleShape loup(rayon);
-			loup.setOrigin({ rayon, rayon });
-			loup.setPosition(centre);
-			loup.setFillColor(sf::Color(120, 120, 120, alpha));
-			window.draw(loup);
+			sf::CircleShape corps(rayon);
+			corps.setOrigin({ rayon, rayon });
+			corps.setPosition(centre);
+			corps.setFillColor(sf::Color(120, 120, 120, alpha));
+			window.draw(corps);
 
 			// une croix (tombe) qui monte
 			sf::Vector2f posCroix = centre - sf::Vector2f(0.f, 15.f * avancement);
@@ -150,8 +151,35 @@ void CGrille::afficherAnimations(const sf::Font& font)
 			window.draw(vertical);
 			window.draw(horizontal);
 
-			texte.setString(L"loup mort de faim");
+			texte.setString(animation.type == MortDeFaimProie ? L"chevreuil mort de faim" : L"loup mort de faim");
 			texte.setFillColor(sf::Color(200, 200, 200, alpha));
+			break;
+		}
+		case MortNaturelleProie:
+		case MortNaturellePredateur:
+		{
+			// l'âme de l'animal s'élève avec une auréole dorée
+			sf::Vector2f posAme = centre - sf::Vector2f(0.f, taille / 2.f * avancement);
+			float rayon = taille / 5.f;
+
+			sf::CircleShape ame(rayon);
+			ame.setOrigin({ rayon, rayon });
+			ame.setPosition(posAme);
+			ame.setFillColor(sf::Color(220, 235, 255, static_cast<std::uint8_t>(alpha * 0.7f)));
+			window.draw(ame);
+
+			float rayonAureole = rayon * 0.8f;
+			sf::CircleShape aureole(rayonAureole);
+			aureole.setOrigin({ rayonAureole, rayonAureole });
+			aureole.setScale({ 1.f, 0.35f });
+			aureole.setPosition(posAme - sf::Vector2f(0.f, rayon * 1.4f));
+			aureole.setFillColor(sf::Color::Transparent);
+			aureole.setOutlineThickness(3.f);
+			aureole.setOutlineColor(sf::Color(255, 215, 0, alpha));
+			window.draw(aureole);
+
+			texte.setString(animation.type == MortNaturelleProie ? L"chevreuil mort de vieillesse" : L"loup mort de vieillesse");
+			texte.setFillColor(sf::Color(200, 225, 255, alpha));
 			break;
 		}
 		case CombatPredateur:
@@ -336,9 +364,10 @@ void CGrille::retirerMorts(CCellule& cellule)
 {
 	auto& proies = cellule.proies;
 	proies.erase(std::remove_if(proies.begin(), proies.end(),
-		[](CProie* p) {
+		[this](CProie* p) {
 			if (p->estVivant())
 				return false;
+			ajouterAnimation(p->getCauseMort() == CauseMort::Faim ? MortDeFaimProie : MortNaturelleProie, p->getPosition());
 			delete p;
 			return true;
 		}), proies.end());
@@ -348,7 +377,7 @@ void CGrille::retirerMorts(CCellule& cellule)
 		[this](CPredateur* p) {
 			if (p->estVivant())
 				return false;
-			ajouterAnimation(MortNaturelle, p->getPosition());
+			ajouterAnimation(p->getCauseMort() == CauseMort::Faim ? MortDeFaimPredateur : MortNaturellePredateur, p->getPosition());
 			delete p;
 			return true;
 		}), predateurs.end());

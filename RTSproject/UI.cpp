@@ -141,10 +141,29 @@ void CInterrupteur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
 
 CCurseur::CCurseur(const sf::Font& font, const std::string& libelle, unsigned int& valeur, unsigned int min, unsigned int max,
 	sf::Color accent, const bool* actif, const std::string& unite, unsigned int pas, bool resetRequis)
-	: CWidget(font, libelle, accent, actif), valeur(&valeur), min(min), max(max), pas(std::max(1u, pas)), unite(unite)
+	: CWidget(font, libelle, accent, actif), entier(&valeur), min(min), max(max), pas(std::max(1u, pas)), unite(unite)
 {
 	this->resetRequis = resetRequis;
 	valeur = std::clamp(valeur, min, max);
+}
+
+CCurseur::CCurseur(const sf::Font& font, const std::string& libelle, double& taux, sf::Color accent, const bool* actif)
+	: CWidget(font, libelle, accent, actif), taux(&taux), min(0), max(100), pas(1), unite(" %")
+{
+	taux = std::clamp(taux, 0.0, 1.0);
+}
+
+unsigned int CCurseur::lire() const
+{
+	return entier ? *entier : static_cast<unsigned int>(std::round(*taux * 100.0));
+}
+
+void CCurseur::ecrire(unsigned int v)
+{
+	if (entier)
+		*entier = v;
+	else
+		*taux = v / 100.0;
 }
 
 sf::FloatRect CCurseur::piste() const
@@ -158,9 +177,9 @@ bool CCurseur::majDepuisSouris(sf::Vector2f souris)
 	float t = std::clamp((souris.x - p.position.x) / p.size.x, 0.f, 1.f);
 	unsigned int nbPas = static_cast<unsigned int>(std::round(t * (max - min) / pas));
 	unsigned int nouvelle = std::min(max, min + nbPas * pas);
-	if (nouvelle == *valeur)
+	if (nouvelle == lire())
 		return false;
-	*valeur = nouvelle;
+	ecrire(nouvelle);
 	modifie = true;
 	return true;
 }
@@ -211,12 +230,12 @@ void CCurseur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
 	const float yTexte = zone.position.y + 20.f;
 	cible.draw(creerTexte(*font, libelle, 15, estompe(Theme::texteDiscret, actifMaintenant), { zone.position.x + 12.f, yTexte }));
 
-	sf::Text texteValeur = creerTexte(*font, utf8(std::to_string(*valeur) + unite), 16, estompe(accent, actifMaintenant), { 0.f, yTexte }, true);
+	sf::Text texteValeur = creerTexte(*font, utf8(std::to_string(lire()) + unite), 16, estompe(accent, actifMaintenant), { 0.f, yTexte }, true);
 	texteValeur.setPosition({ std::round(zone.position.x + zone.size.x - 12.f - texteValeur.getLocalBounds().size.x), std::round(yTexte) });
 	cible.draw(texteValeur);
 
 	// piste
-	float t = (max > min) ? static_cast<float>(*valeur - min) / (max - min) : 0.f;
+	float t = (max > min) ? static_cast<float>(lire() - min) / (max - min) : 0.f;
 
 	sf::ConvexShape fondPiste = rectangleArrondi(p.size, 2.f, estompe(Theme::interrupteurOff, actifMaintenant));
 	fondPiste.setPosition(p.position);
@@ -265,6 +284,9 @@ CInterface::CInterface(const sf::Font& font) : font(font)
 	proies.push_back(std::make_unique<CCurseur>(font, "Jours sans manger", tempsMortDeFaimH, 1, 50, p, &meurtDeFaimH));
 	proies.push_back(std::make_unique<CInterrupteur>(font, "Délai de reproduction", estCeQueTempsAvantReproductionH, p));
 	proies.push_back(std::make_unique<CCurseur>(font, "Jours entre reproductions", tempsAvantReproductionH, 0, 50, p, &estCeQueTempsAvantReproductionH));
+	proies.push_back(std::make_unique<CCurseur>(font, "Taux de reproduction", tauxReproductionH, p));
+	proies.push_back(std::make_unique<CInterrupteur>(font, "Mort naturelle", mortNaturelleH, p));
+	proies.push_back(std::make_unique<CCurseur>(font, "Taux de mortalité", tauxMortaliteH, p, &mortNaturelleH));
 
 	// --- prédateurs
 	const sf::Color c = Theme::predateur;
@@ -274,6 +296,9 @@ CInterface::CInterface(const sf::Font& font) : font(font)
 	predateurs.push_back(std::make_unique<CCurseur>(font, "Jours sans manger", tempsMortDeFaimC, 1, 50, c, &meurtDeFaimC));
 	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Délai de reproduction", estCeQueTempsAvantReproductionC, c));
 	predateurs.push_back(std::make_unique<CCurseur>(font, "Jours entre reproductions", tempsAvantReproductionC, 0, 50, c, &estCeQueTempsAvantReproductionC));
+	predateurs.push_back(std::make_unique<CCurseur>(font, "Taux de reproduction", tauxReproductionC, c));
+	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Mort naturelle", mortNaturelleC, c));
+	predateurs.push_back(std::make_unique<CCurseur>(font, "Taux de mortalité", tauxMortaliteC, c, &mortNaturelleC));
 	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Se battent entre eux", seBatteC, c));
 
 	calculerDisposition();
