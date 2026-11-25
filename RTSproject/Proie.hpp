@@ -1,13 +1,14 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-#include "Variable.hpp"
 #include "Entite.hpp"
 
-class CProie : public CEntite 
+class CProie : public CEntite
 {
+	unsigned int satiete;
+
+	const sf::Texture& getTexture() const override;
+
 public:
-	CProie(int x, int y, unsigned int age=0);
-	void afficher(sf::RenderWindow& window) override;
-	TypeEntite getType() const override { return TypeEntite::Proie; }
+	CProie(int x, int y, unsigned int age = 0);
+	void seDeplacer() override;
 };

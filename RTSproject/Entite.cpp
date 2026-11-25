@@ -1,46 +1,46 @@
 #include "Entite.hpp"
 #include "fonctions.hpp"
-#include "Variable.hpp"
+#include <iostream>
 
-CEntite::CEntite(unsigned int annee) {
-	unsigned int numLinesX = (windowWidth / cellSize) - 1;
-	unsigned int numLinesY = (windowHeight / cellSize) - 1;
-
-	position = sf::Vector2f(static_cast<float>(cellSize * randomizer(0, numLinesX)), static_cast<float>(cellSize * randomizer(0, numLinesY)));
-	age = annee;
-	tempsAvantReproduction = 0;
+CEntite::CEntite(int x, int y, unsigned int age)
+	: position(static_cast<float>(x * cellSize), static_cast<float>(y * cellSize)), age(age)
+{
 	sexe = (randomizer(0, 1) == 0) ? Sexe::Male : Sexe::Femelle;
 }
 
-void CEntite::afficher(sf::RenderWindow& window) {
-	sf::CircleShape proie(cellSize / 2.0f);
-	proie.setFillColor(sf::Color::Green);
-	proie.setPosition(position);
-	window.draw(proie);
+sf::Texture chargerTexture(const std::string& chemin)
+{
+	sf::Texture texture;
+	if (!texture.loadFromFile(chemin))
+		std::cerr << "Erreur lors du chargement de " << chemin << std::endl;
+	return texture;
 }
 
-void CEntite::seDeplacer(bool useSatiete)
+void CEntite::afficher(sf::RenderWindow& window) const
 {
-	int maxX = (windowWidth / cellSize) - 1;
-	int maxY = (windowHeight / cellSize) - 1;
+	sf::Sprite sprite(getTexture());
+	sf::Vector2f taille = sprite.getLocalBounds().size;
+	sprite.setScale({ cellSize / taille.x, cellSize / taille.y });
+	sprite.setPosition(position);
+	window.draw(sprite);
+}
 
+// déplacement d'une case (diagonales comprises), la grille est un tore
+void CEntite::seDeplacer()
+{
+	const int nbColonnes = windowWidth / cellSize;
+	const int nbLignes = windowHeight / cellSize;
 
-	int dx = randomizer(-1, 1);
-	int dy = randomizer(-1, 1);
+	int x = static_cast<int>(position.x / cellSize) + randomizer(-1, 1);
+	int y = static_cast<int>(position.y / cellSize) + randomizer(-1, 1);
 
-	int x = static_cast<int>(position.x / cellSize);
-	int y = static_cast<int>(position.y / cellSize);
-
-	x += dx;
-	y += dy;
-
-	x = (x % (maxX + 1) + (maxX + 1)) % (maxX + 1);
-	y = (y % (maxY + 1) + (maxY + 1)) % (maxY + 1);
+	x = (x + nbColonnes) % nbColonnes;
+	y = (y + nbLignes) % nbLignes;
 
 	position.x = static_cast<float>(x * cellSize);
 	position.y = static_cast<float>(y * cellSize);
 
 	if (tempsAvantReproduction > 0)
 		tempsAvantReproduction--;
-	age ++;
+	age++;
 }

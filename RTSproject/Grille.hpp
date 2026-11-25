@@ -1,40 +1,49 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <vector>
 #include "Variable.hpp"
-#include "Entite.hpp"
 #include "Cellule.hpp"
 
 struct Animation {
 	TypeAnimation type;
 	sf::Vector2f position; // position de la cellule
-	float debut;           // temps de départ en secondes
+	float debut;           // en secondes
 };
 
 class CGrille {
-	std::vector < std::vector < CCellule>> grille;
+	sf::RenderWindow& window;
+	std::vector<std::vector<CCellule>> grille; // grille[y][x]
+	sf::VertexArray vertexGrille;
 	std::vector<Animation> animations;
 	sf::Clock horloge;
-	void ajouterAnimation(TypeAnimation type, sf::Vector2f position);
-	sf::VertexArray vertexGrille;
-	sf::RenderWindow& window;
-	void Reproduction();
 	unsigned int nbProies = 0;
 	unsigned int nbPredateurs = 0;
 
-public:
-	CGrille(sf::RenderWindow& window);
-	void afficher() const;
-	void afficherAnimations(const sf::Font& font);
-	void gameLoop();
+	void ajouterAnimation(TypeAnimation type, sf::Vector2f position);
+	void vider();
+	void deplacement();
+	void retirerMorts(CCellule& cellule);
+	void combatEtReproductionPredateurs(CCellule& cellule, int x, int y);
+	void naissancePredateur(CCellule& cellule, CPredateur* male, CPredateur* femelle, int x, int y);
+	void predation(CCellule& cellule);
+	void reproductionProies();
+	void compterPopulations();
+
 	void gameLoopProie();
 	void gameLoopPredateur();
 	void gameLoopProiePredateur();
 
+public:
+	CGrille(sf::RenderWindow& window);
+	~CGrille();
+	CGrille(const CGrille&) = delete; // la grille possède ses entités (new / delete)
+	CGrille& operator=(const CGrille&) = delete;
 
-	void deplacementPredateurs(bool useSatiete);
-	void deplacementProies(bool useSatiete);
 	void reset();
+	void gameLoop();
+	void afficher() const;
+	void afficherAnimations(const sf::Font& font);
 	unsigned int getNbProies() const { return nbProies; }
 	unsigned int getNbPredateurs() const { return nbPredateurs; }
 };

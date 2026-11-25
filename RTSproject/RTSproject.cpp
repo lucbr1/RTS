@@ -3,7 +3,6 @@
 #include <iostream>
 #include "Grille.hpp"
 #include "UI.hpp"
-#include <map>
 
 int main()
 {

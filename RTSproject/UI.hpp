@@ -67,10 +67,12 @@ public:
 	void dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const override;
 };
 
-// Curseur : libellé + valeur en haut, piste glissable en dessous, lié à un entier
+// Curseur : libellé + valeur en haut, piste glissable en dessous,
+// lié à un entier ou à un taux (double entre 0 et 1 affiché en %)
 class CCurseur : public CWidget
 {
-	unsigned int* valeur;
+	unsigned int* entier = nullptr;
+	double* taux = nullptr;
 	unsigned int min, max;
 	unsigned int pas;         // la valeur avance de pas en pas (ex : 10 en 10)
 	std::string unite;
@@ -79,11 +81,14 @@ class CCurseur : public CWidget
 
 	sf::FloatRect piste() const;
 	bool majDepuisSouris(sf::Vector2f souris);
+	unsigned int lire() const;
+	void ecrire(unsigned int v);
 
 public:
 	// si resetRequis est vrai, la simulation n'est relancée qu'au relâchement de la souris
 	CCurseur(const sf::Font& font, const std::string& libelle, unsigned int& valeur, unsigned int min, unsigned int max,
 		sf::Color accent, const bool* actif = nullptr, const std::string& unite = " j", unsigned int pas = 1, bool resetRequis = false);
+	CCurseur(const sf::Font& font, const std::string& libelle, double& taux, sf::Color accent, const bool* actif = nullptr);
 	float hauteur() const override { return 62.f; }
 	bool appuyer(sf::Vector2f souris) override;
 	bool glisser(sf::Vector2f souris) override;
