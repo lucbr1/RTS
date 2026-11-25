@@ -1,28 +1,32 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <string>
 #include "Variable.hpp"
 
-
 class CEntite {
-protected :
+protected:
 	sf::Vector2f position;
 	unsigned int age;
 	bool mort = false;
-	unsigned int tempsAvantReproduction;
+	unsigned int tempsAvantReproduction = 0;
 	Sexe sexe;
 
+	virtual const sf::Texture& getTexture() const = 0;
+
 public:
-	CEntite(unsigned int age=0);
+	CEntite(int x, int y, unsigned int age = 0);
 	virtual ~CEntite() = default;
+
+	void afficher(sf::RenderWindow& window) const;
+	virtual void seDeplacer();
+
 	sf::Vector2f getPosition() const { return position; }
 	bool estVivant() const { return !mort; }
-	virtual void afficher(sf::RenderWindow& window);
-	virtual void seDeplacer();
 	unsigned int getAge() const { return age; }
-	unsigned int getTempsAvantReproduction() const { return tempsAvantReproduction; }
-	void setTempsAvantReproduction(unsigned int temps) { tempsAvantReproduction = temps; }
-	virtual TypeEntite getType() const = 0;
 	Sexe getSexe() const { return sexe; }
+	bool peutSeReproduire() const { return age >= ageMinReproduction && tempsAvantReproduction == 0; }
+	void setTempsAvantReproduction(unsigned int temps) { tempsAvantReproduction = temps; }
 };
 
+sf::Texture chargerTexture(const std::string& chemin);
