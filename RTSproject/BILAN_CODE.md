@@ -6,55 +6,36 @@
 
 ---
 
-## 1. Variable de l'UI sans effet utile
-
-| Variable | Où | Quoi faire |
-|---|---|---|
-| `meurtDeFaimH` / `tempsMortDeFaimH` | `Proie.cpp` | les proies ne mangent rien ➜ elles meurent toutes au bout de `tempsMortDeFaimH` jours. **Inutile sans végétation** (extension 4.4), sinon retirer de l'UI |
-
----
-
-## 2. Ce qu'il reste du TP (partie 3)
-
-### 3.1 (4) / 3.6 (6) – Export CSV ❗
-- [ ] rien n'existe
-- [ ] où : `RTSproject.cpp`, dans le `if (Space)`, au même endroit que `ui.enregistrer(...)` (les mêmes valeurs alimentent déjà les graphiques)
-- [ ] écrire `jour;nbProies;nbPredateurs` dans un `std::ofstream`
-- [ ] vider / réécrire le fichier au `reset()`
+## 1. Ce qu'il reste du TP (partie 3)
 
 ### 3.6 (3) – Combat **ou** reproduction
-- [ ] actuellement : combat des mâles **toujours** (si `seBatteC`), puis reproduction (`combatEtReproductionPredateurs`, `Grille.cpp:454`)
+- [ ] actuellement : combat des mâles (probabilité `probaCombat`, si `seBatteC`) **puis** reproduction (`combatEtReproductionPredateurs`, `Grille.cpp:485`)
 - [ ] TP : tirage au sort ➜ (1) combat **ou** (2) reproduction
 
-### 3.6 (4) – Reproduction selon la satiété
-- [ ] ajouter une condition `getSatiete() >= seuil` dans `naissancePredateur` (`Grille.cpp:489`)
-
 ### Extensions (partie 4)
-- [x] courbes de population (proies, prédateurs, les deux) et diagramme de phases (boutons « Graphiques » de la barre latérale)
-- [ ] espérance de vie (mort selon l'âge, au lieu d'un taux fixe)
-- [ ] végétation (donnerait un sens à `meurtDeFaimH`)
+- [x] courbes de population, diagramme de phases et export CSV
+- [x] mort de vieillesse (loi de Gompertz, `isDead` dans `fonctions.cpp`)
+- [x] végétation (herbe)
 
 ---
 
-## 3. Diagramme de phases en « escargot » (spirale)
-Testé sur ~1000 simulations avec tous les réglages du menu : **aucun réglage ne donne de spirale** avec le code actuel.
-- meilleur réglage trouvé ➜ **un seul tour** (pic de proies puis pic de loups décalé), puis extinction des deux espèces vers le jour 550-1100 :
-  proies 800 / 75 % reproduction / mortalité 1 % / délai 10 j — prédateurs 100 / 30 % reproduction / mort naturelle off / délai off / meurent de faim **on**, 40 j / ne se battent pas
-- causes :
-  - la reproduction des loups ne dépend pas de la nourriture ➜ beaucoup de proies ne donnent pas plus de louveteaux
-  - reproduction **par rencontre** des deux espèces ➜ quand une population devient petite, les couples ne se croisent plus et elle s'éteint au lieu de remonter
+## 2. Diagramme de phases en « escargot » (spirale) – à retester
+L'ancien test (~1000 simulations, aucune spirale, au mieux un tour) date d'**avant** l'herbe, la reproduction selon la satiété et la mort de Gompertz ➜ il n'est plus valable.
+- avec les valeurs par défaut actuelles, les proies explosent (~19 000 au jour 320) : « Mort de faim » des proies est sur off, donc l'herbe limite leurs naissances mais ne les fait jamais mourir
+- causes observées à l'époque, à vérifier :
+  - reproduction **par rencontre** ➜ une population devenue petite ne retrouve plus de partenaire et s'éteint au lieu de remonter
   - tous les loups naissent avec la même satiété ➜ ils ont faim en même temps et meurent par vagues
-- la condition de satiété (3.6 (4)) **seule ne suffit pas** (testée : toujours < 1 tour) ; il faudrait aussi rendre la reproduction des loups plus fréquente quand ils sont bien nourris
+- la reproduction selon la satiété (maintenant codée) était justement le lien manquant « plus de proies ➜ plus de louveteaux »
 
 ---
 
-## 4. Divers
-- seuil de faim `tempsMortDeFaimC / 2` (`Grille.cpp:512`) ➜ éventuellement une variable dans `Variable.hpp`
+## 3. Divers
+- seuil de faim des prédateurs `tempsMortDeFaimC / 2` (`Grille.cpp:523`) ➜ éventuellement une variable dans `Variable.hpp`
+- « Repro. si satiété > » peut dépasser « Mort de faim après » (satiété max) ➜ plus aucune reproduction ; limiter le curseur au max de satiété
 - si `spawnH` et `spawnC` sont tous les deux sur off ➜ `gameLoop()` ne fait rien, mais le jour avance quand même
 
 ---
 
-## 5. Ordre conseillé
-1. Export CSV
-2. Combat **ou** reproduction (3.6 (3)) et satiété (3.6 (4))
-3. Extensions
+## 4. Ordre conseillé
+1. Combat **ou** reproduction (3.6 (3))
+2. Retester les réglages pour l'escargot

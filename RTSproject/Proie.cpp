@@ -13,15 +13,14 @@ const sf::Texture& CProie::getTexture() const
 
 void CProie::seDeplacer()
 {
-	if (meurtDeFaimH)
+	if (satiete == 0 && meurtDeFaimH)
 	{
-		if (satiete == 0)
-		{
-			causeMort = CauseMort::Faim;
-			return;
-		}
-		satiete--;
+		causeMort = CauseMort::Faim;
+		return;
 	}
+	if (satiete > 0)
+		satiete--;
+
 	if (mortNaturelleH && isDead(age, mortaliteInitialeH, coefficientRisqueMortH))
 	{
 		causeMort = CauseMort::Naturelle;

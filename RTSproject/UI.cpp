@@ -389,7 +389,7 @@ CInterface::CInterface(const sf::Font& font)
 	ajouter(proies, std::make_unique<CCurseur>(font, "Délai de reproduction", tempsAvantReproductionH, 0, 50, p), &estCeQueTempsAvantReproductionH);
 	ajouter(proies, std::make_unique<CCurseur>(font, "Repro. si satiété >", seuilSatieteReproductionH, 0, 50, p), &reproductionEnFonctionDeLaSatieteH);
 	ajouter(proies, std::make_unique<CCurseur>(font, "Mort de faim après", tempsMortDeFaimH, 1, 50, p), &meurtDeFaimH);
-	ajouter(proies, std::make_unique<CCurseur>(font, "Mort naturelle", tauxMortaliteH, p), &mortNaturelleH);
+	proies.push_back(std::make_unique<CInterrupteur>(font, "Mort de vieillesse", mortNaturelleH, p));
 
 	// --- prédateurs
 	const sf::Color c = Theme::predateur;
@@ -398,7 +398,7 @@ CInterface::CInterface(const sf::Font& font)
 	ajouter(predateurs, std::make_unique<CCurseur>(font, "Délai de reproduction", tempsAvantReproductionC, 0, 50, c), &estCeQueTempsAvantReproductionC);
 	ajouter(predateurs, std::make_unique<CCurseur>(font, "Repro. si satiété >", seuilSatieteReproductionC, 0, 50, c), &reproductionEnFonctionDeLaSatieteC);
 	ajouter(predateurs, std::make_unique<CCurseur>(font, "Mort de faim après", tempsMortDeFaimC, 1, 50, c), &meurtDeFaimC);
-	ajouter(predateurs, std::make_unique<CCurseur>(font, "Mort naturelle", tauxMortaliteC, c), &mortNaturelleC);
+	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Mort de vieillesse", mortNaturelleC, c));
 	ajouter(predateurs, std::make_unique<CCurseur>(font, "Combats (mort)", probaCombat, c), &seBatteC);
 
 	// --- herbe
