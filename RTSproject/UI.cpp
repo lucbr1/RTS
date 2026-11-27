@@ -97,6 +97,34 @@ static void dessinerCroix(sf::RenderTarget& cible, sf::FloatRect bouton, sf::Vec
 	}
 }
 
+// interrupteur (piste arrondie + bouton rond), etat entre 0 (off) et 1 (on)
+static void dessinerBascule(sf::RenderTarget& cible, sf::Vector2f position, sf::Vector2f taille, sf::Color accent, float etat)
+{
+	sf::ConvexShape piste = rectangleArrondi(taille, taille.y / 2.f, melanger(Theme::interrupteurOff, accent, etat));
+	piste.setPosition(position);
+	cible.draw(piste);
+
+	const float rayon = taille.y / 2.f - 3.f;
+	const float marge = (taille.y - 2.f * rayon) / 2.f;
+	const float xMin = position.x + marge + rayon;
+	const float xMax = position.x + taille.x - marge - rayon;
+	sf::CircleShape bouton(rayon, 24);
+	bouton.setOrigin({ rayon, rayon });
+	bouton.setFillColor(sf::Color::White);
+	bouton.setPosition({ xMin + (xMax - xMin) * etat, position.y + taille.y / 2.f });
+	cible.draw(bouton);
+}
+
+// fait avancer une animation vers sa cible (0 ou 1)
+static void avancerVers(float& valeur, float cible, float dt)
+{
+	float pas = dt * 8.f;
+	if (std::abs(cible - valeur) <= pas)
+		valeur = cible;
+	else
+		valeur += (cible > valeur) ? pas : -pas;
+}
+
 // ---------------------------------------------------------------------------
 // CWidget
 // ---------------------------------------------------------------------------
@@ -126,12 +154,7 @@ bool CInterrupteur::appuyer(sf::Vector2f souris)
 
 void CInterrupteur::animer(float dt)
 {
-	float cible = *valeur ? 1.f : 0.f;
-	float pas = dt * 8.f;
-	if (std::abs(cible - curseur) <= pas)
-		curseur = cible;
-	else
-		curseur += (cible > curseur) ? pas : -pas;
+	avancerVers(curseur, *valeur ? 1.f : 0.f, dt);
 }
 
 void CInterrupteur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
@@ -151,21 +174,7 @@ void CInterrupteur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
 
 	// interrupteur
 	const sf::Vector2f tailleInter(44.f, 24.f);
-	const sf::Vector2f posInter(zone.position.x + zone.size.x - tailleInter.x - 12.f, centreY - tailleInter.y / 2.f);
-
-	sf::ConvexShape pisteInter = rectangleArrondi(tailleInter, tailleInter.y / 2.f, melanger(Theme::interrupteurOff, accent, curseur));
-	pisteInter.setPosition(posInter);
-	cible.draw(pisteInter);
-
-	const float rayon = 9.f;
-	const float marge = (tailleInter.y - 2.f * rayon) / 2.f;
-	sf::CircleShape bouton(rayon, 24);
-	bouton.setOrigin({ rayon, rayon });
-	bouton.setFillColor(sf::Color::White);
-	float xMin = posInter.x + marge + rayon;
-	float xMax = posInter.x + tailleInter.x - marge - rayon;
-	bouton.setPosition({ xMin + (xMax - xMin) * curseur, centreY });
-	cible.draw(bouton);
+	dessinerBascule(cible, { zone.position.x + zone.size.x - tailleInter.x - 12.f, centreY - tailleInter.y / 2.f }, tailleInter, accent, curseur);
 }
 
 // ---------------------------------------------------------------------------
@@ -180,28 +189,55 @@ CCurseur::CCurseur(const sf::Font& font, const std::string& libelle, unsigned in
 	valeur = std::clamp(valeur, min, max);
 }
 
+CCurseur::CCurseur(const sf::Font& font, const std::string& libelle, double& valeur, unsigned int min, unsigned int max,
+	sf::Color accent, const bool* actif, const std::string& unite)
+	: CWidget(font, libelle, accent, actif), reel(&valeur), echelle(1.0), min(min), max(max), pas(1), unite(unite)
+{
+	valeur = std::clamp(std::round(valeur), static_cast<double>(min), static_cast<double>(max));
+}
+
 CCurseur::CCurseur(const sf::Font& font, const std::string& libelle, double& taux, sf::Color accent, const bool* actif)
-	: CWidget(font, libelle, accent, actif), taux(&taux), min(0), max(100), pas(1), unite(" %")
+	: CWidget(font, libelle, accent, actif), reel(&taux), echelle(100.0), min(0), max(100), pas(1), unite(" %")
 {
 	taux = std::clamp(taux, 0.0, 1.0);
 }
 
-unsigned int CCurseur::lire() const
+CCurseur& CCurseur::avecInterrupteur(bool& valeur)
 {
-	return entier ? *entier : static_cast<unsigned int>(std::round(*taux * 100.0));
+	interrupteur = &valeur;
+	actif = &valeur;
+	animInter = valeur ? 1.f : 0.f;
+	return *this;
 }
 
+unsigned int CCurseur::lire() const
+{
+	if (resetRequis && enGlissement)
+		return valeurGlissement;
+	return entier ? *entier : static_cast<unsigned int>(std::round(*reel * echelle));
+}
+
+// pour un curseur qui relance la simulation, la vraie variable n'est modifiée qu'au relâchement :
+// sinon la variable (ex : cellSize) change alors que la grille n'a pas encore été reconstruite
 void CCurseur::ecrire(unsigned int v)
 {
-	if (entier)
+	if (resetRequis && enGlissement)
+		valeurGlissement = v;
+	else if (entier)
 		*entier = v;
 	else
-		*taux = v / 100.0;
+		*reel = v / echelle;
 }
 
 sf::FloatRect CCurseur::piste() const
 {
-	return sf::FloatRect({ zone.position.x + 14.f, zone.position.y + 44.f }, { zone.size.x - 28.f, 4.f });
+	return sf::FloatRect({ zone.position.x + 14.f, zone.position.y + 42.f }, { zone.size.x - 28.f, 4.f });
+}
+
+// moitié haute de la ligne (libellé + interrupteur)
+sf::FloatRect CCurseur::zoneInterrupteur() const
+{
+	return sf::FloatRect(zone.position, { zone.size.x, 30.f });
 }
 
 bool CCurseur::majDepuisSouris(sf::Vector2f souris)
@@ -220,13 +256,21 @@ bool CCurseur::majDepuisSouris(sf::Vector2f souris)
 // pour un curseur qui relance la simulation, on attend le relâchement (renvoie false ici)
 bool CCurseur::appuyer(sf::Vector2f souris)
 {
+	// clic sur la moitié haute : bascule l'interrupteur
+	if (interrupteur && zoneInterrupteur().contains(souris))
+	{
+		*interrupteur = !*interrupteur;
+		return true;
+	}
+
 	if (!estActif())
 		return false;
 	// zone cliquable : la moitié basse de la ligne (autour de la piste)
-	sf::FloatRect p = piste();
-	sf::FloatRect zoneClic({ zone.position.x, p.position.y - 14.f }, { zone.size.x, 32.f });
+	sf::FloatRect zoneClic({ zone.position.x, zone.position.y + 30.f }, { zone.size.x, zone.size.y - 30.f });
 	if (!zoneClic.contains(souris))
 		return false;
+	enGlissement = false;
+	valeurGlissement = lire(); // valeur actuelle de la variable
 	enGlissement = true;
 	modifie = false;
 	return majDepuisSouris(souris) && !resetRequis;
@@ -244,7 +288,15 @@ bool CCurseur::relacher()
 	bool aChange = enGlissement && modifie;
 	enGlissement = false;
 	modifie = false;
+	if (aChange && resetRequis)
+		ecrire(valeurGlissement); // on applique la valeur maintenant (la grille va être réinitialisée)
 	return aChange;
+}
+
+void CCurseur::animer(float dt)
+{
+	if (interrupteur)
+		avancerVers(animInter, *interrupteur ? 1.f : 0.f, dt);
 }
 
 void CCurseur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
@@ -252,20 +304,27 @@ void CCurseur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
 	const bool actifMaintenant = estActif();
 	const sf::FloatRect p = piste();
 
-	if (actifMaintenant && (zone.contains(souris) || enGlissement))
+	if (((actifMaintenant || interrupteur) && zone.contains(souris)) || enGlissement)
 	{
 		sf::ConvexShape fond = rectangleArrondi(zone.size, 8.f, Theme::survol);
 		fond.setPosition(zone.position);
 		cible.draw(fond);
 	}
 
-	// libellé et valeur
-	const float yTexte = zone.position.y + 20.f;
-	cible.draw(creerTexte(*font, libelle, 15, estompe(Theme::texteDiscret, actifMaintenant), { zone.position.x + 12.f, yTexte }));
+	// libellé, valeur et interrupteur sur la même ligne
+	// (la place de l'interrupteur est toujours réservée pour que les valeurs soient alignées)
+	const float yTexte = zone.position.y + 18.f;
+	const sf::Vector2f tailleInter(36.f, 20.f);
+	const float xInter = zone.position.x + zone.size.x - 12.f - tailleInter.x;
+
+	cible.draw(creerTexte(*font, libelle, 16, actifMaintenant ? Theme::texte : Theme::texteDiscret, { zone.position.x + 12.f, yTexte }));
 
 	sf::Text texteValeur = creerTexte(*font, utf8(std::to_string(lire()) + unite), 16, estompe(accent, actifMaintenant), { 0.f, yTexte }, true);
-	texteValeur.setPosition({ std::round(zone.position.x + zone.size.x - 12.f - texteValeur.getLocalBounds().size.x), std::round(yTexte) });
+	texteValeur.setPosition({ std::round(xInter - 12.f - texteValeur.getLocalBounds().size.x), std::round(yTexte) });
 	cible.draw(texteValeur);
+
+	if (interrupteur)
+		dessinerBascule(cible, { xInter, yTexte - tailleInter.y / 2.f }, tailleInter, accent, animInter);
 
 	// piste
 	float t = (max > min) ? static_cast<float>(lire() - min) / (max - min) : 0.f;
@@ -282,7 +341,7 @@ void CCurseur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
 	}
 
 	// poignée
-	const float rayon = enGlissement ? 9.f : 8.f;
+	const float rayon = enGlissement ? 9.f : 7.f;
 	sf::CircleShape poignee(rayon, 24);
 	poignee.setOrigin({ rayon, rayon });
 	poignee.setPosition({ p.position.x + p.size.x * t, p.position.y + p.size.y / 2.f });
@@ -296,7 +355,7 @@ void CCurseur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
 
 namespace
 {
-	const float largeurPanneau = 700.f;
+	const float largeurPanneau = 760.f;
 	const float padding = 28.f;
 	const float gouttiere = 20.f;
 	const float enteteColonne = 52.f;
@@ -312,31 +371,34 @@ CInterface::CInterface(const sf::Font& font)
 	// --- général
 	general.push_back(std::make_unique<CInterrupteur>(font, "Animations", playAnimations, Theme::general));
 	general.push_back(std::make_unique<CInterrupteur>(font, "Grille", afficherGrille, Theme::general));
+	general.push_back(std::make_unique<CCurseur>(font, "Taille des cases", cellSize, 10, 50, Theme::general, nullptr, " px", 5, true));
+
+	// chaque ligne : libellé + valeur, interrupteur éventuel à droite, curseur en dessous
+	auto ajouter = [](ListeWidgets& liste, std::unique_ptr<CCurseur> curseur, bool* interrupteur = nullptr)
+	{
+		if (interrupteur)
+			curseur->avecInterrupteur(*interrupteur);
+		liste.push_back(std::move(curseur));
+	};
 
 	// --- proies
 	const sf::Color p = Theme::proie;
-	proies.push_back(std::make_unique<CInterrupteur>(font, "Apparition", spawnH, p, true));
-	proies.push_back(std::make_unique<CCurseur>(font, "Population initiale", popInitialeH, 0, 1000, p, &spawnH, "", 10, true));
-	proies.push_back(std::make_unique<CInterrupteur>(font, "Meurent de faim", meurtDeFaimH, p));
-	proies.push_back(std::make_unique<CCurseur>(font, "Jours sans manger", tempsMortDeFaimH, 1, 50, p, &meurtDeFaimH));
-	proies.push_back(std::make_unique<CInterrupteur>(font, "Délai de reproduction", estCeQueTempsAvantReproductionH, p));
-	proies.push_back(std::make_unique<CCurseur>(font, "Jours entre reproductions", tempsAvantReproductionH, 0, 50, p, &estCeQueTempsAvantReproductionH));
-	proies.push_back(std::make_unique<CCurseur>(font, "Taux de reproduction", tauxReproductionH, p));
-	proies.push_back(std::make_unique<CInterrupteur>(font, "Mort naturelle", mortNaturelleH, p));
-	proies.push_back(std::make_unique<CCurseur>(font, "Taux de mortalité", tauxMortaliteH, p, &mortNaturelleH));
+	ajouter(proies, std::make_unique<CCurseur>(font, "Population initiale", popInitialeH, 0, 1000, p, nullptr, "", 10, true), &spawnH);
+	ajouter(proies, std::make_unique<CCurseur>(font, "Taux de reproduction", tauxReproductionH, p));
+	ajouter(proies, std::make_unique<CCurseur>(font, "Délai de reproduction", tempsAvantReproductionH, 0, 50, p), &estCeQueTempsAvantReproductionH);
+	ajouter(proies, std::make_unique<CCurseur>(font, "Repro. si satiété >", seuilSatieteReproductionH, 0, 50, p), &reproductionEnFonctionDeLaSatieteH);
+	ajouter(proies, std::make_unique<CCurseur>(font, "Mort de faim après", tempsMortDeFaimH, 1, 50, p), &meurtDeFaimH);
+	ajouter(proies, std::make_unique<CCurseur>(font, "Mort naturelle", tauxMortaliteH, p), &mortNaturelleH);
 
 	// --- prédateurs
 	const sf::Color c = Theme::predateur;
-	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Apparition", spawnC, c, true));
-	predateurs.push_back(std::make_unique<CCurseur>(font, "Population initiale", popInitialeC, 0, 1000, c, &spawnC, "", 10, true));
-	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Meurent de faim", meurtDeFaimC, c));
-	predateurs.push_back(std::make_unique<CCurseur>(font, "Jours sans manger", tempsMortDeFaimC, 1, 50, c, &meurtDeFaimC));
-	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Délai de reproduction", estCeQueTempsAvantReproductionC, c));
-	predateurs.push_back(std::make_unique<CCurseur>(font, "Jours entre reproductions", tempsAvantReproductionC, 0, 50, c, &estCeQueTempsAvantReproductionC));
-	predateurs.push_back(std::make_unique<CCurseur>(font, "Taux de reproduction", tauxReproductionC, c));
-	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Mort naturelle", mortNaturelleC, c));
-	predateurs.push_back(std::make_unique<CCurseur>(font, "Taux de mortalité", tauxMortaliteC, c, &mortNaturelleC));
-	predateurs.push_back(std::make_unique<CInterrupteur>(font, "Se battent entre eux", seBatteC, c));
+	ajouter(predateurs, std::make_unique<CCurseur>(font, "Population initiale", popInitialeC, 0, 1000, c, nullptr, "", 10, true), &spawnC);
+	ajouter(predateurs, std::make_unique<CCurseur>(font, "Taux de reproduction", tauxReproductionC, c));
+	ajouter(predateurs, std::make_unique<CCurseur>(font, "Délai de reproduction", tempsAvantReproductionC, 0, 50, c), &estCeQueTempsAvantReproductionC);
+	ajouter(predateurs, std::make_unique<CCurseur>(font, "Repro. si satiété >", seuilSatieteReproductionC, 0, 50, c), &reproductionEnFonctionDeLaSatieteC);
+	ajouter(predateurs, std::make_unique<CCurseur>(font, "Mort de faim après", tempsMortDeFaimC, 1, 50, c), &meurtDeFaimC);
+	ajouter(predateurs, std::make_unique<CCurseur>(font, "Mort naturelle", tauxMortaliteC, c), &mortNaturelleC);
+	ajouter(predateurs, std::make_unique<CCurseur>(font, "Combats (mort)", probaCombat, c), &seBatteC);
 
 	calculerDisposition();
 }
@@ -425,6 +487,10 @@ bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& 
 		}
 		else if (touche->code == sf::Keyboard::Key::M)
 			basculer();
+		else if (touche->code == sf::Keyboard::Key::A)
+			playAnimations = !playAnimations;
+		else if (touche->code == sf::Keyboard::Key::G)
+			afficherGrille = !afficherGrille;
 		return false;
 	}
 
@@ -629,7 +695,9 @@ void CInterface::dessinerBarreLaterale(sf::RenderTarget& cible, sf::Vector2f sou
 	}
 
 	// aide en bas
-	cible.draw(creerTexte(font, utf8("Espace : jour suivant"), 12, Theme::texteDiscret, { x + 14.f, windowHeight - 44.f }));
+	cible.draw(creerTexte(font, utf8("Espace : jour suivant"), 12, Theme::texteDiscret, { x + 14.f, windowHeight - 84.f }));
+	cible.draw(creerTexte(font, utf8(afficherGrille ? "G : grille (on)" : "G : grille (off)"), 12, Theme::texteDiscret, { x + 14.f, windowHeight - 64.f }));
+	cible.draw(creerTexte(font, utf8(playAnimations ? "A : animations (on)" : "A : animations (off)"), 12, Theme::texteDiscret, { x + 14.f, windowHeight - 44.f }));
 	cible.draw(creerTexte(font, utf8("M : menu"), 12, Theme::texteDiscret, { x + 14.f, windowHeight - 24.f }));
 }
 
@@ -684,7 +752,7 @@ void CInterface::dessinerMenu(sf::RenderTarget& cible, sf::Vector2f souris) cons
 	dessinerColonne(cible, souris, predateurs, "Prédateurs", Theme::predateur, zonePredateurs);
 
 	// pied de page
-	cible.draw(creerTexte(font, utf8("« Apparition » relance la simulation   ·   Échap pour fermer"), 13, Theme::texteDiscret,
+	cible.draw(creerTexte(font, utf8("« Population initiale » relance la simulation   ·   Échap pour fermer"), 13, Theme::texteDiscret,
 		{ x, panneau.position.y + panneau.size.y - 26.f }));
 }
 

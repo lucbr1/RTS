@@ -7,7 +7,7 @@ inline unsigned int windowHeight = 900;
 inline unsigned int placeBoutton = 150; // largeur de la barre latérale
 
 //Grille
-inline int cellSize = 25;
+inline unsigned int cellSize = 25; // taille d'une case en pixels (modifiable dans le menu)
 inline bool afficherGrille = true;
 inline sf::Color gridColor = sf::Color(255, 255, 255);
 
@@ -24,6 +24,8 @@ inline bool estCeQueTempsAvantReproductionH = true;
 inline unsigned int tempsAvantReproductionH = 10; // jours
 inline bool meurtDeFaimH = false;
 inline unsigned int tempsMortDeFaimH = 10; // jours sans manger avant de mourir
+inline bool reproductionEnFonctionDeLaSatieteH = true; // les proies se reproduisent en fonction de leur satiété
+inline double seuilSatieteReproductionH = 5; // seuil de satiété pour la reproduction (0 à satiete)
 
 //Prédateurs
 inline bool spawnC = true;
@@ -36,6 +38,9 @@ inline unsigned int tempsAvantReproductionC = 10; // jours
 inline bool meurtDeFaimC = true;
 inline unsigned int tempsMortDeFaimC = 40; // jours sans manger avant de mourir
 inline bool seBatteC = false;
+inline double probaCombat = 0.2; // probabilité qu'un mâle meure au combat (quand il y a plusieurs mâles dans la cellule)
+inline bool reproductionEnFonctionDeLaSatieteC = true; // les predateurs se reproduisent en fonction de leur satiété
+inline double seuilSatieteReproductionC = 5; // seuil de satiété pour la reproduction (0 à satiete)
 
 //Animations
 inline float dureeAnimation = 1.5f; // secondes

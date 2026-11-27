@@ -13,4 +13,8 @@ public:
 	void seDeplacer() override;
 	unsigned int getSatiete() const { return satiete; }
 	void setSatiete(unsigned int s) { satiete = s; }
+	bool peutSeReproduire() const {
+		return age >= ageMinReproduction && tempsAvantReproduction == 0
+			&& (reproductionEnFonctionDeLaSatieteC ? getSatiete() > seuilSatieteReproductionC : true);
+	}
 };

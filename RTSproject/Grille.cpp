@@ -6,6 +6,16 @@
 
 CGrille::CGrille(sf::RenderWindow& window) : window(window)
 {
+	reset();
+}
+
+CGrille::~CGrille()
+{
+	vider();
+}
+
+void CGrille::construireGrille()
+{
 	const unsigned int nbColonnes = windowWidth / cellSize;
 	const unsigned int nbLignes = windowHeight / cellSize;
 
@@ -25,12 +35,6 @@ CGrille::CGrille(sf::RenderWindow& window) : window(window)
 	}
 
 	grille.assign(nbLignes, std::vector<CCellule>(nbColonnes));
-	reset();
-}
-
-CGrille::~CGrille()
-{
-	vider();
 }
 
 void CGrille::vider()
@@ -53,6 +57,7 @@ void CGrille::reset()
 {
 	animations.clear();
 	vider();
+	construireGrille();
 
 	const int xMax = static_cast<int>(grille[0].size()) - 1;
 	const int yMax = static_cast<int>(grille.size()) - 1;
@@ -427,7 +432,7 @@ void CGrille::gameLoopProie()
 	reproductionProies();
 }
 
-// si les prédateurs se battent, un seul survit par cellule
+// prédateurs seuls
 void CGrille::gameLoopPredateur()
 {
 	deplacement();
@@ -436,53 +441,49 @@ void CGrille::gameLoopPredateur()
 		for (auto& cellule : ligne)
 		{
 			retirerMorts(cellule);
-			if (!seBatteC || cellule.predateurs.size() <= 1)
-				continue;
-
-			ajouterAnimation(CombatPredateur, cellule.predateurs[0]->getPosition());
-			CPredateur* gagnant = cellule.predateurs[randomizer(0, static_cast<int>(cellule.predateurs.size()) - 1)];
-			for (auto predateur : cellule.predateurs)
-				if (predateur != gagnant)
-					delete predateur;
-			cellule.predateurs = { gagnant };
+			combatPredateurs(cellule);
 		}
 	}
 }
 
-// avec combat : les mâles se battent, le gagnant peut se reproduire avec une femelle
-// sans combat : chaque mâle est associé à une femelle et le couple peut se reproduire
+// si les prédateurs se battent et qu'il y a plusieurs mâles dans la cellule,
+// chaque mâle a une probabilité probaCombat de mourir au combat
+void CGrille::combatPredateurs(CCellule& cellule)
+{
+	std::vector<CPredateur*> males;
+	for (auto predateur : cellule.predateurs)
+		if (predateur->getSexe() == Sexe::Male)
+			males.push_back(predateur);
+
+	if (!seBatteC || males.size() <= 1)
+		return;
+
+	for (auto male : males)
+	{
+		if (randomReel() < probaCombat)
+		{
+			ajouterAnimation(CombatPredateur, male->getPosition());
+			// on le retire de la cellule avant de le supprimer
+			cellule.predateurs.erase(std::find(cellule.predateurs.begin(), cellule.predateurs.end(), male));
+			delete male;
+		}
+	}
+}
+
+// les mâles se battent (si seBatteC), puis chaque mâle restant
+// est associé à une femelle et le couple peut se reproduire
 void CGrille::combatEtReproductionPredateurs(CCellule& cellule, int x, int y)
 {
+	combatPredateurs(cellule);
+
 	std::vector<CPredateur*> males;
 	std::vector<CPredateur*> femelles;
 	for (auto predateur : cellule.predateurs)
 		(predateur->getSexe() == Sexe::Male ? males : femelles).push_back(predateur);
 
-	if (!seBatteC)
-	{
-		size_t nbCouples = std::min(males.size(), femelles.size());
-		for (size_t i = 0; i < nbCouples; ++i)
-			naissancePredateur(cellule, males[i], femelles[i], x, y);
-		return;
-	}
-
-	if (males.empty())
-		return;
-
-	CPredateur* male = males[randomizer(0, static_cast<int>(males.size()) - 1)];
-	if (males.size() > 1)
-	{
-		ajouterAnimation(CombatPredateur, male->getPosition());
-		for (auto perdant : males)
-			if (perdant != male)
-				delete perdant;
-	}
-
-	cellule.predateurs = femelles;
-	cellule.predateurs.push_back(male);
-
-	if (!femelles.empty())
-		naissancePredateur(cellule, male, femelles[randomizer(0, static_cast<int>(femelles.size()) - 1)], x, y);
+	size_t nbCouples = std::min(males.size(), femelles.size());
+	for (size_t i = 0; i < nbCouples; ++i)
+		naissancePredateur(cellule, males[i], femelles[i], x, y);
 }
 
 // le couple a une probabilité tauxReproductionC de donner un louveteau

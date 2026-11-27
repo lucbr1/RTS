@@ -71,19 +71,25 @@ public:
 	void dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const override;
 };
 
-// Curseur : libellé + valeur en haut, piste glissable en dessous,
-// lié à un entier ou à un taux (double entre 0 et 1 affiché en %)
+// Curseur : libellé + valeur (+ interrupteur optionnel) en haut, piste glissable en dessous,
+// lié à un entier, à un réel ou à un taux (double entre 0 et 1 affiché en %)
 class CCurseur : public CWidget
 {
 	unsigned int* entier = nullptr;
-	double* taux = nullptr;
+	double* reel = nullptr;
+	double echelle = 1.0;     // valeur affichée = *reel * echelle (100 pour un taux)
 	unsigned int min, max;
 	unsigned int pas;         // la valeur avance de pas en pas (ex : 10 en 10)
 	std::string unite;
 	bool enGlissement = false;
 	bool modifie = false;     // la valeur a changé depuis l'appui
+	unsigned int valeurGlissement = 0; // si resetRequis : valeur affichée pendant le glissement, appliquée au relâchement
+
+	bool* interrupteur = nullptr; // si non nul : interrupteur à droite du libellé, qui active le curseur
+	float animInter = 0.f;
 
 	sf::FloatRect piste() const;
+	sf::FloatRect zoneInterrupteur() const;
 	bool majDepuisSouris(sf::Vector2f souris);
 	unsigned int lire() const;
 	void ecrire(unsigned int v);
@@ -92,11 +98,19 @@ public:
 	// si resetRequis est vrai, la simulation n'est relancée qu'au relâchement de la souris
 	CCurseur(const sf::Font& font, const std::string& libelle, unsigned int& valeur, unsigned int min, unsigned int max,
 		sf::Color accent, const bool* actif = nullptr, const std::string& unite = " j", unsigned int pas = 1, bool resetRequis = false);
+	// réel affiché comme un entier (pas de 1) entre min et max
+	CCurseur(const sf::Font& font, const std::string& libelle, double& valeur, unsigned int min, unsigned int max,
+		sf::Color accent, const bool* actif = nullptr, const std::string& unite = " j");
 	CCurseur(const sf::Font& font, const std::string& libelle, double& taux, sf::Color accent, const bool* actif = nullptr);
-	float hauteur() const override { return 62.f; }
+
+	// ajoute un interrupteur sur la ligne du libellé ; le curseur n'est actif que s'il est allumé
+	CCurseur& avecInterrupteur(bool& valeur);
+
+	float hauteur() const override { return 60.f; }
 	bool appuyer(sf::Vector2f souris) override;
 	bool glisser(sf::Vector2f souris) override;
 	bool relacher() override;
+	void animer(float dt) override;
 	void dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const override;
 };
 
