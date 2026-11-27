@@ -31,6 +31,7 @@ class CGrille {
 	void predation(CCellule& cellule);
 	void reproductionProies();
 	void compterPopulations();
+	void mettreAJourHerbe();
 
 	void gameLoopProie();
 	void gameLoopPredateur();

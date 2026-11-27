@@ -2,6 +2,7 @@
 #include "Variable.hpp"
 #include <cmath>
 #include <algorithm>
+#include <stdexcept>
 
 // ---------------------------------------------------------------------------
 // Utilitaires
@@ -355,7 +356,7 @@ void CCurseur::dessiner(sf::RenderTarget& cible, sf::Vector2f souris) const
 
 namespace
 {
-	const float largeurPanneau = 760.f;
+	const float largeurPanneau = 1090.f; // 3 colonnes : proies, prédateurs, herbe
 	const float padding = 28.f;
 	const float gouttiere = 20.f;
 	const float enteteColonne = 52.f;
@@ -400,6 +401,11 @@ CInterface::CInterface(const sf::Font& font)
 	ajouter(predateurs, std::make_unique<CCurseur>(font, "Mort naturelle", tauxMortaliteC, c), &mortNaturelleC);
 	ajouter(predateurs, std::make_unique<CCurseur>(font, "Combats (mort)", probaCombat, c), &seBatteC);
 
+	// --- herbe
+	const sf::Color h = Theme::herbe;
+	ajouter(herbe, std::make_unique<CCurseur>(font, "Quantité max par case", quantiteMaxHerbe, 0, 10, h, nullptr, "", 1, true));
+	ajouter(herbe, std::make_unique<CCurseur>(font, "Temps de repousse", tempsAvantReapparitionHerbe, 1, 30, h));
+
 	calculerDisposition();
 }
 
@@ -426,14 +432,19 @@ void CInterface::calculerDisposition()
 	boutonFermerGraphique = sf::FloatRect({ panneauGraphique.position.x + tailleGraphique.x - padding - 32.f, panneauGraphique.position.y + 22.f }, { 32.f, 32.f });
 
 	const float largeurUtile = largeurPanneau - 2.f * padding;
-	const float largeurColonne = (largeurUtile - gouttiere) / 2.f;
+	const float largeurColonne = (largeurUtile - 2.f * gouttiere) / 3.f;
 
-	// section générale : les éléments sont répartis sur 2 colonnes
+	// section générale : les éléments sont répartis sur 3 colonnes
 	float hauteurGeneral = 0.f;
-	for (size_t i = 0; i < general.size(); i += 2)
-		hauteurGeneral += general[i]->hauteur();
+	for (size_t i = 0; i < general.size(); i += 3)
+	{
+		float hauteurLigne = 0.f;
+		for (size_t j = i; j < general.size() && j < i + 3; ++j)
+			hauteurLigne = std::max(hauteurLigne, general[j]->hauteur());
+		hauteurGeneral += hauteurLigne;
+	}
 
-	const float hauteurColonne = enteteColonne + std::max(hauteurTotale(proies), hauteurTotale(predateurs)) + basColonne;
+	const float hauteurColonne = enteteColonne + std::max({ hauteurTotale(proies), hauteurTotale(predateurs), hauteurTotale(herbe) }) + basColonne;
 	const float hauteur = 106.f + hauteurGeneral + 24.f + hauteurColonne + 52.f;
 
 	const sf::Vector2f tailleFenetre(static_cast<float>(windowWidth + placeBoutton), static_cast<float>(windowHeight));
@@ -446,20 +457,20 @@ void CInterface::calculerDisposition()
 	boutonFermer = sf::FloatRect({ panneau.position.x + largeurPanneau - padding - 32.f, y + 22.f }, { 32.f, 32.f });
 
 	// général
-	float yGeneral = y + 106.f;
+	const float yGeneral = y + 106.f;
 	for (size_t i = 0; i < general.size(); ++i)
 	{
-		float xCol = x + (i % 2) * (largeurColonne + gouttiere);
-		general[i]->placer({ xCol, yGeneral }, largeurColonne);
-		if (i % 2 == 1 || i + 1 == general.size())
-			yGeneral += general[i]->hauteur();
+		float xCol = x + (i % 3) * (largeurColonne + gouttiere);
+		float yLigne = yGeneral + (i / 3) * general[0]->hauteur();
+		general[i]->placer({ xCol, yLigne }, largeurColonne);
 	}
 
 	// colonnes
-	ySeparateur = yGeneral + 12.f;
-	const float yColonnes = yGeneral + 24.f;
+	ySeparateur = yGeneral + hauteurGeneral + 12.f;
+	const float yColonnes = yGeneral + hauteurGeneral + 24.f;
 	zoneProies = sf::FloatRect({ x, yColonnes }, { largeurColonne, hauteurColonne });
 	zonePredateurs = sf::FloatRect({ x + largeurColonne + gouttiere, yColonnes }, { largeurColonne, hauteurColonne });
+	zoneHerbe = sf::FloatRect({ x + 2.f * (largeurColonne + gouttiere), yColonnes }, { largeurColonne, hauteurColonne });
 
 	auto placerColonne = [](ListeWidgets& liste, sf::FloatRect zoneCol)
 	{
@@ -472,6 +483,10 @@ void CInterface::calculerDisposition()
 	};
 	placerColonne(proies, zoneProies);
 	placerColonne(predateurs, zonePredateurs);
+	placerColonne(herbe, zoneHerbe);
+
+	// bouton d'export, à gauche de la croix des graphiques
+	boutonExporter = sf::FloatRect({ boutonFermerGraphique.position.x - 12.f - 150.f, boutonFermerGraphique.position.y }, { 150.f, 32.f });
 }
 
 bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& window)
@@ -502,7 +517,7 @@ bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& 
 		if (!ouvert)
 			return false;
 		sf::Vector2f souris = window.mapPixelToCoords(deplacement->position);
-		for (auto* groupe : { &general, &proies, &predateurs })
+		for (auto* groupe : { &general, &proies, &predateurs, &herbe })
 			for (auto& w : *groupe)
 				if (w->glisser(souris) && w->resetRequis)
 					reset = true;
@@ -512,7 +527,7 @@ bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& 
 	if (const auto* relache = event.getIf<sf::Event::MouseButtonReleased>())
 	{
 		if (relache->button == sf::Mouse::Button::Left)
-			for (auto* groupe : { &general, &proies, &predateurs })
+			for (auto* groupe : { &general, &proies, &predateurs, &herbe })
 				for (auto& w : *groupe)
 					if (w->relacher() && w->resetRequis)
 						reset = true;
@@ -544,6 +559,11 @@ bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& 
 
 	if (!ouvert)
 	{
+		if (vue != Vue::Aucune && boutonExporter.contains(souris))
+		{
+			exporterGraphique();
+			return false;
+		}
 		// clic sur la croix ou sur la simulation en dehors du graphique
 		if (boutonFermerGraphique.contains(souris) || (!panneauGraphique.contains(souris) && souris.x < windowWidth))
 			vue = Vue::Aucune;
@@ -556,7 +576,7 @@ bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& 
 		return false;
 	}
 
-	for (auto* groupe : { &general, &proies, &predateurs })
+	for (auto* groupe : { &general, &proies, &predateurs, &herbe })
 		for (auto& w : *groupe)
 			if (w->appuyer(souris) && w->resetRequis)
 				reset = true;
@@ -565,7 +585,7 @@ bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& 
 
 void CInterface::animer(float dt)
 {
-	for (auto* groupe : { &general, &proies, &predateurs })
+	for (auto* groupe : { &general, &proies, &predateurs, &herbe })
 		for (auto& w : *groupe)
 			w->animer(dt);
 }
@@ -591,6 +611,42 @@ void CInterface::enregistrer(unsigned int jour, unsigned int nbProies, unsigned 
 	courbeProies.ajouterPoint(jour, nbProies);
 	courbePredateurs.ajouterPoint(jour, nbPredateurs);
 	phases.ajouterPoint(nbProies, nbPredateurs);
+}
+
+// le fichier est créé dans le dossier d'où le programme est lancé
+void CInterface::exporterGraphique()
+{
+	const CGraphique* graphique = &courbeProies;
+	const CGraphique* superposee = nullptr;
+	std::string nomFichier = "proies.csv";
+	std::string entete; // vide : titres des axes
+	if (vue == Vue::Predateurs)
+	{
+		graphique = &courbePredateurs;
+		nomFichier = "predateurs.csv";
+	}
+	else if (vue == Vue::LesDeux)
+	{
+		superposee = &courbePredateurs;
+		nomFichier = "proies_predateurs.csv";
+		entete = "Jours,Proies,Predateurs"; // les deux courbes ont le même titre d'axe ("Population")
+	}
+	else if (vue == Vue::Phases)
+	{
+		graphique = &phases;
+		nomFichier = "phases.csv";
+	}
+
+	try
+	{
+		graphique->exporter(nomFichier, superposee, entete);
+		messageExport = "Exporté dans " + nomFichier;
+	}
+	catch (const std::exception& e)
+	{
+		messageExport = e.what();
+	}
+	horlogeExport.restart();
 }
 
 void CInterface::effacerGraphiques()
@@ -747,9 +803,10 @@ void CInterface::dessinerMenu(sf::RenderTarget& cible, sf::Vector2f souris) cons
 	separateur.setFillColor(Theme::carte);
 	cible.draw(separateur);
 
-	// colonnes proies / prédateurs
+	// colonnes proies / prédateurs / herbe
 	dessinerColonne(cible, souris, proies, "Proies", Theme::proie, zoneProies);
 	dessinerColonne(cible, souris, predateurs, "Prédateurs", Theme::predateur, zonePredateurs);
+	dessinerColonne(cible, souris, herbe, "Herbe", Theme::herbe, zoneHerbe);
 
 	// pied de page
 	cible.draw(creerTexte(font, utf8("« Population initiale » relance la simulation   ·   Échap pour fermer"), 13, Theme::texteDiscret,
@@ -765,6 +822,22 @@ void CInterface::dessinerGraphique(sf::RenderTarget& cible, sf::Vector2f souris)
 
 	dessinerPanneau(cible, panneauGraphique);
 	dessinerCroix(cible, boutonFermerGraphique, souris);
+
+	// bouton d'export
+	sf::ConvexShape fondExport = rectangleArrondi(boutonExporter.size, 8.f, boutonExporter.contains(souris) ? Theme::survol : Theme::carte);
+	fondExport.setPosition(boutonExporter.position);
+	cible.draw(fondExport);
+	sf::Text texteExport = creerTexte(font, utf8("Exporter (CSV)"), 15, Theme::texte, { 0.f, boutonExporter.position.y + boutonExporter.size.y / 2.f });
+	texteExport.setPosition({ std::round(boutonExporter.position.x + (boutonExporter.size.x - texteExport.getLocalBounds().size.x) / 2.f), texteExport.getPosition().y });
+	cible.draw(texteExport);
+
+	// message après un export, affiché 3 secondes sous le bouton
+	if (!messageExport.empty() && horlogeExport.getElapsedTime().asSeconds() < 3.f)
+	{
+		sf::Text message = creerTexte(font, utf8(messageExport), 13, Theme::texteDiscret, { 0.f, boutonExporter.position.y + boutonExporter.size.y + 16.f });
+		message.setPosition({ std::round(boutonExporter.position.x + boutonExporter.size.x - message.getLocalBounds().size.x), message.getPosition().y });
+		cible.draw(message);
+	}
 
 	const CGraphique* graphique = &courbeProies;
 	std::string titre = "Proies";

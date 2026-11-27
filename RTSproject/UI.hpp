@@ -19,6 +19,7 @@ namespace Theme
 	inline const sf::Color general = sf::Color(96, 150, 240);     // bleu
 	inline const sf::Color proie = sf::Color(102, 187, 106);      // vert
 	inline const sf::Color predateur = sf::Color(229, 83, 83);    // rouge
+	inline const sf::Color herbe = sf::Color(214, 178, 72);       // jaune paille
 }
 
 // convertit une chaîne UTF-8 (accents) en sf::String
@@ -130,11 +131,15 @@ class CInterface
 	sf::FloatRect panneau;
 	sf::FloatRect zoneProies;
 	sf::FloatRect zonePredateurs;
+	sf::FloatRect zoneHerbe;
 	float ySeparateur = 0.f;
 
 	sf::FloatRect boutonsGraphiques[4];
 	sf::FloatRect panneauGraphique;
 	sf::FloatRect boutonFermerGraphique;
+	sf::FloatRect boutonExporter;
+	std::string messageExport;   // affiché quelques secondes après un export
+	sf::Clock horlogeExport;
 	CGraphique courbeProies;
 	CGraphique courbePredateurs;
 	CGraphique phases;
@@ -142,8 +147,10 @@ class CInterface
 	ListeWidgets general;
 	ListeWidgets proies;
 	ListeWidgets predateurs;
+	ListeWidgets herbe;
 
 	void calculerDisposition();
+	void exporterGraphique(); // exporte le graphique affiché dans un fichier .csv
 	void dessinerBarreLaterale(sf::RenderTarget& cible, sf::Vector2f souris, unsigned int nbProies, unsigned int nbPredateurs, unsigned int jour) const;
 	void dessinerMenu(sf::RenderTarget& cible, sf::Vector2f souris) const;
 	void dessinerColonne(sf::RenderTarget& cible, sf::Vector2f souris, const ListeWidgets& lignes, const std::string& titre, sf::Color accent, sf::FloatRect zone) const;

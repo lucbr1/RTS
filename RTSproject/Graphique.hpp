@@ -23,5 +23,6 @@ public:
 	// superposee : seconde courbe tracée sur les mêmes axes (ses titres d'axes sont ignorés)
 	void dessiner(sf::RenderTarget& cible, const sf::Font& font, sf::FloatRect zone, bool marquerDepart = false, const CGraphique* superposee = nullptr) const;
 
-	void exporter(const std::string& nomFichier, const CGraphique* superposee = nullptr) const;
+	// entete : première ligne du fichier ; si vide, on utilise les titres des axes
+	void exporter(const std::string& nomFichier, const CGraphique* superposee = nullptr, const std::string& entete = "") const;
 };

@@ -42,6 +42,10 @@ inline double probaCombat = 0.2; // probabilité qu'un mâle meure au combat (qu
 inline bool reproductionEnFonctionDeLaSatieteC = true; // les predateurs se reproduisent en fonction de leur satiété
 inline double seuilSatieteReproductionC = 5; // seuil de satiété pour la reproduction (0 à satiete)
 
+//Cellules
+inline unsigned int quantiteMaxHerbe = 2; // quantité maximale d'herbe dans une cellule
+inline unsigned int tempsAvantReapparitionHerbe = 5; // jours avant que l'herbe ne repousse
+
 //Animations
 inline float dureeAnimation = 1.5f; // secondes
 inline float tailleAnimation = 40.f; // taille minimale en pixels (les cellules peuvent être petites)

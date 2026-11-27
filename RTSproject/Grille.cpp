@@ -316,6 +316,7 @@ void CGrille::gameLoop()
 		gameLoopPredateur();
 	else if (spawnH)
 		gameLoopProie();
+	mettreAJourHerbe();
 	compterPopulations();
 }
 
@@ -358,7 +359,16 @@ void CGrille::deplacement()
 	for (auto proie : proies)
 	{
 		proie->seDeplacer();
-		cellule(proie).proies.push_back(proie);
+		auto& celluleproie = cellule(proie); // & : sinon on modifie une copie de la cellule
+		celluleproie.proies.push_back(proie);
+		if (celluleproie.quantiteHerbe > 0)
+		{
+			celluleproie.quantiteHerbe--;
+			proie->setSatiete(tempsMortDeFaimH);
+			// l'herbe commence à repousser
+			if (celluleproie.tempsAvantReapparitionHerbe == 0)
+				celluleproie.tempsAvantReapparitionHerbe = tempsAvantReapparitionHerbe;
+		}
 	}
 	for (auto predateur : predateurs)
 	{
@@ -535,4 +545,24 @@ void CGrille::gameLoopProiePredateur()
 		}
 	}
 	reproductionProies();
+}
+
+void CGrille::mettreAJourHerbe()
+{
+	for (auto& ligne : grille)
+	{
+		for (auto& cellule : ligne)
+		{
+			if (cellule.quantiteHerbe < quantiteMaxHerbe && cellule.tempsAvantReapparitionHerbe > 0)
+			{
+				cellule.tempsAvantReapparitionHerbe--;
+				if (cellule.tempsAvantReapparitionHerbe == 0)
+				{
+					cellule.quantiteHerbe++;
+					if (cellule.quantiteHerbe < quantiteMaxHerbe)
+						cellule.tempsAvantReapparitionHerbe = tempsAvantReapparitionHerbe;
+				}	
+			}
+		}
+	}
 }

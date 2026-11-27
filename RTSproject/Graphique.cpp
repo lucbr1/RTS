@@ -161,13 +161,15 @@ void CGraphique::dessiner(sf::RenderTarget& cible, const sf::Font& font, sf::Flo
 	}
 }
 
-void CGraphique::exporter(const std::string& nomFichier, const CGraphique* superposee) const
+void CGraphique::exporter(const std::string& nomFichier, const CGraphique* superposee, const std::string& entete) const
 {
 	std::ofstream fichier(nomFichier);
 	if (!fichier)
 		throw std::runtime_error("Impossible d'ouvrir le fichier " + nomFichier + " pour l'exportation du graphique.");
-	
-	if (superposee)
+
+	if (!entete.empty())
+		fichier << entete << "\n";
+	else if (superposee)
 		fichier << titreX << "," << titreY << "," << superposee->titreY << "\n";
 	else
 		fichier << titreX << "," << titreY << "\n";
