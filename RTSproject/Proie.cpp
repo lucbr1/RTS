@@ -22,7 +22,7 @@ void CProie::seDeplacer()
 		}
 		satiete--;
 	}
-	if (mortNaturelleH && randomReel() < tauxMortaliteH)
+	if (mortNaturelleH && isDead(age, mortaliteInitialeH, coefficientRisqueMortH))
 	{
 		causeMort = CauseMort::Naturelle;
 		return;

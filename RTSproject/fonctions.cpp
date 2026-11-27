@@ -13,3 +13,15 @@ int randomizer(int min, int max) {
 double randomReel() {
 	return std::uniform_real_distribution<double>(0.0, 1.0)(global_rng());
 }
+
+bool isDead(unsigned int age, double beta, double alpha)
+{
+    // Calcul de p(x) selon la loi de Gompertz
+    double p = beta * std::exp(alpha * age);
+
+    // Saturation à 1.0 pour éviter les probabilités > 100%
+    if (p > 1.0) p = 1.0;
+
+    // Tirage bernoulli via distribution uniforme
+    return std::uniform_real_distribution<double>(0.0, 1.0)(global_rng()) < p;
+}

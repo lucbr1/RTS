@@ -21,7 +21,7 @@ void CPredateur::seDeplacer()
 	if (satiete > 0)
 		satiete--;
 
-	if (mortNaturelleC && randomReel() < tauxMortaliteC)
+	if (mortNaturelleC && isDead(age, mortaliteInitialeC, coefficientRisqueMortC))
 	{
 		causeMort = CauseMort::Naturelle;
 		return;

@@ -26,6 +26,8 @@ inline bool meurtDeFaimH = false;
 inline unsigned int tempsMortDeFaimH = 10; // jours sans manger avant de mourir
 inline bool reproductionEnFonctionDeLaSatieteH = true; // les proies se reproduisent en fonction de leur satiété
 inline double seuilSatieteReproductionH = 5; // seuil de satiété pour la reproduction (0 à satiete)
+inline double mortaliteInitialeH = 0.0005; // probabilité qu'une proie meure dès le début de la simulation (0 à 1)
+inline double coefficientRisqueMortH = 0.00082; // coefficient de risque de mortalité (0 à 1) naturelle (vieillesse)
 
 //Prédateurs
 inline bool spawnC = true;
@@ -41,6 +43,8 @@ inline bool seBatteC = false;
 inline double probaCombat = 0.2; // probabilité qu'un mâle meure au combat (quand il y a plusieurs mâles dans la cellule)
 inline bool reproductionEnFonctionDeLaSatieteC = true; // les predateurs se reproduisent en fonction de leur satiété
 inline double seuilSatieteReproductionC = 5; // seuil de satiété pour la reproduction (0 à satiete)
+inline double mortaliteInitialeC = 0.0003; // probabilité qu'une proie meure dès le début de la simulation (0 à 1)
+inline double coefficientRisqueMortC = 0.00118; // coefficient de risque de mortalité (0 à 1) naturelle (vieillesse)
 
 //Cellules
 inline unsigned int quantiteMaxHerbe = 2; // quantité maximale d'herbe dans une cellule
