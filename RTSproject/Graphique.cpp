@@ -2,6 +2,7 @@
 #include "UI.hpp"
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 
 CGraphique::CGraphique(sf::Color couleurLigne, const std::string& titreX, const std::string& titreY)
 	: couleurLigne(couleurLigne), titreX(titreX), titreY(titreY)
@@ -157,5 +158,25 @@ void CGraphique::dessiner(sf::RenderTarget& cible, const sf::Font& font, sf::Flo
 		actuel.setOutlineThickness(2.f);
 		actuel.setOutlineColor(sf::Color::White);
 		cible.draw(actuel);
+	}
+}
+
+void CGraphique::exporter(const std::string& nomFichier, const CGraphique* superposee) const
+{
+	std::ofstream fichier(nomFichier);
+	if (!fichier)
+		throw std::runtime_error("Impossible d'ouvrir le fichier " + nomFichier + " pour l'exportation du graphique.");
+	
+	if (superposee)
+		fichier << titreX << "," << titreY << "," << superposee->titreY << "\n";
+	else
+		fichier << titreX << "," << titreY << "\n";
+
+	for (size_t i = 0; i < abscisses.size(); ++i)
+	{
+		if (superposee)
+			fichier << abscisses[i] << "," << ordonnees[i] << "," << superposee->ordonnees[i] << "\n";
+		else
+			fichier << abscisses[i] << "," << ordonnees[i] << "\n";
 	}
 }
