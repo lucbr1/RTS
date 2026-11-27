@@ -96,6 +96,8 @@ void CGrille::afficher() const
 
 void CGrille::ajouterAnimation(TypeAnimation type, sf::Vector2f position)
 {
+	if (!playAnimations)
+		return; // sinon la liste n'est jamais vidée (elle l'est dans afficherAnimations)
 	animations.push_back({ type, position, horloge.getElapsedTime().asSeconds() });
 }
 

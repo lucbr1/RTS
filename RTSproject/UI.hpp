@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "Graphique.hpp"
 
 // Palette de l'interface
 namespace Theme
@@ -25,6 +26,9 @@ sf::String utf8(const std::string& s);
 
 // rectangle aux coins arrondis
 sf::ConvexShape rectangleArrondi(sf::Vector2f taille, float rayon, sf::Color couleur);
+
+// texte centré verticalement sur position.y
+sf::Text creerTexte(const sf::Font& font, const sf::String& s, unsigned int taille, sf::Color couleur, sf::Vector2f position, bool gras = false);
 
 // Élément du menu (interrupteur, curseur...)
 class CWidget
@@ -98,11 +102,14 @@ public:
 
 using ListeWidgets = std::vector<std::unique_ptr<CWidget>>;
 
-// Barre latérale (bouton menu + statistiques) et menu des paramètres
+// Barre latérale (bouton menu, statistiques, boutons des graphiques), menu des paramètres et graphiques
 class CInterface
 {
+	enum class Vue { Aucune, Proies, Predateurs, LesDeux, Phases }; // même ordre que les boutons
+
 	const sf::Font& font;
 	bool ouvert = false;
+	Vue vue = Vue::Aucune;
 
 	sf::FloatRect boutonMenu;
 	sf::FloatRect boutonFermer;
@@ -110,6 +117,13 @@ class CInterface
 	sf::FloatRect zoneProies;
 	sf::FloatRect zonePredateurs;
 	float ySeparateur = 0.f;
+
+	sf::FloatRect boutonsGraphiques[4];
+	sf::FloatRect panneauGraphique;
+	sf::FloatRect boutonFermerGraphique;
+	CGraphique courbeProies;
+	CGraphique courbePredateurs;
+	CGraphique phases;
 
 	ListeWidgets general;
 	ListeWidgets proies;
@@ -119,12 +133,17 @@ class CInterface
 	void dessinerBarreLaterale(sf::RenderTarget& cible, sf::Vector2f souris, unsigned int nbProies, unsigned int nbPredateurs, unsigned int jour) const;
 	void dessinerMenu(sf::RenderTarget& cible, sf::Vector2f souris) const;
 	void dessinerColonne(sf::RenderTarget& cible, sf::Vector2f souris, const ListeWidgets& lignes, const std::string& titre, sf::Color accent, sf::FloatRect zone) const;
+	void dessinerGraphique(sf::RenderTarget& cible, sf::Vector2f souris) const;
 
 public:
 	CInterface(const sf::Font& font);
 
 	bool estOuvert() const { return ouvert; }
-	void basculer() { ouvert = !ouvert; }
+	void basculer();
+
+	// ajoute l'état du jour aux graphiques
+	void enregistrer(unsigned int jour, unsigned int nbProies, unsigned int nbPredateurs);
+	void effacerGraphiques();
 
 	// gère un événement, renvoie true si la grille doit être réinitialisée
 	bool gererEvenement(const sf::Event& event, const sf::RenderWindow& window);

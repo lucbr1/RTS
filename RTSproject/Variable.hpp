@@ -16,9 +16,9 @@ inline unsigned int ageMinReproduction = 30; // jours
 
 //Proies
 inline bool spawnH = true;
-inline unsigned int popInitialeH = 100;
+inline unsigned int popInitialeH = 800;
 inline double tauxReproductionH = 0.75;
-inline double tauxMortaliteH = 0.1;
+inline double tauxMortaliteH = 0.01;
 inline bool mortNaturelleH = true; // les proies peuvent mourir aléatoirement de vieillesse
 inline bool estCeQueTempsAvantReproductionH = true;
 inline unsigned int tempsAvantReproductionH = 10; // jours
@@ -27,15 +27,15 @@ inline unsigned int tempsMortDeFaimH = 10; // jours sans manger avant de mourir
 
 //Prédateurs
 inline bool spawnC = true;
-inline unsigned int popInitialeC = 200;
-inline double tauxReproductionC = 0.02;
+inline unsigned int popInitialeC = 100;
+inline double tauxReproductionC = 0.30;
 inline double tauxMortaliteC = 0.1;
-inline bool mortNaturelleC = true; // les predateurs peuvent mourir aléatoirement de vieillesse
-inline bool estCeQueTempsAvantReproductionC = true;
+inline bool mortNaturelleC = false; // les predateurs peuvent mourir aléatoirement de vieillesse
+inline bool estCeQueTempsAvantReproductionC = false;
 inline unsigned int tempsAvantReproductionC = 10; // jours
-inline bool meurtDeFaimC = false;
-inline unsigned int tempsMortDeFaimC = 10; // jours sans manger avant de mourir
-inline bool seBatteC = true;
+inline bool meurtDeFaimC = true;
+inline unsigned int tempsMortDeFaimC = 40; // jours sans manger avant de mourir
+inline bool seBatteC = false;
 
 //Animations
 inline float dureeAnimation = 1.5f; // secondes

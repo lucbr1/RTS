@@ -1,77 +1,161 @@
 #include "Graphique.hpp"
-#include "Variable.hpp"
+#include "UI.hpp"
 #include <algorithm>
+#include <cmath>
 
-CGraphique::CGraphique(sf::Color couleurLigne = sf::Color::Green)
-    : couleurLigne(couleurLigne) {}
-
-// Ajoute un point discret (abscisse, ordonnée)
-void CGraphique::ajouterPoint(int x, int y) {
-    abscisses.push_back(x);
-    ordonnees.push_back(y);
+CGraphique::CGraphique(sf::Color couleurLigne, const std::string& titreX, const std::string& titreY)
+	: couleurLigne(couleurLigne), titreX(titreX), titreY(titreY)
+{
 }
 
-// Efface toutes les données enregistrées
-void CGraphique::effacer() {
-    abscisses.clear();
-    ordonnees.clear();
+void CGraphique::ajouterPoint(int x, int y)
+{
+	abscisses.push_back(x);
+	ordonnees.push_back(y);
 }
 
-// Modifie la couleur de la courbe
-void CGraphique::definirCouleur(sf::Color couleur) {
-    couleurLigne = couleur;
+void CGraphique::effacer()
+{
+	abscisses.clear();
+	ordonnees.clear();
 }
 
-// Dessine le graphique dans 'zoneAffichage' (coordonnées en pixels)
-void CGraphique::dessiner(sf::RenderTarget& cible, float marge = 20.f) const {
-    // 1. Calcul automatique de la zone disponible en évitant la zone des boutons
-    float gauchePanneau = marge;
-    float hautPanneau = marge;
-    float largeurPanneau = std::max(1.f, static_cast<float>(windowWidth) - static_cast<float>(placeBoutton) - 2.f * marge);
-    float hauteurPanneau = std::max(1.f, static_cast<float>(windowHeight) - 2.f * marge);
+// pas de graduation « rond » (1, 2, 5, 10, 20, 50...) pour avoir environ 5 graduations
+static int pasGraduation(int maximum)
+{
+	double brut = std::max(1, maximum) / 5.0;
+	double puissance = std::pow(10.0, std::floor(std::log10(brut)));
+	double f = brut / puissance;
+	double pas = (f <= 1.0 ? 1.0 : f <= 2.0 ? 2.0 : f <= 5.0 ? 5.0 : 10.0) * puissance;
+	return std::max(1, static_cast<int>(pas));
+}
 
-    // 2. Fond du panneau graphique
-    sf::RectangleShape panneau(sf::Vector2f(largeurPanneau, hauteurPanneau));
-    panneau.setPosition(sf::Vector2f(gauchePanneau, hautPanneau));
-    panneau.setFillColor(sf::Color(25, 25, 30, 230));
-    panneau.setOutlineThickness(1.5f);
-    panneau.setOutlineColor(sf::Color(120, 120, 140));
-    cible.draw(panneau);
+// segment épais (sf::Lines ne fait qu'un pixel de large)
+static void ajouterSegment(sf::VertexArray& triangles, sf::Vector2f a, sf::Vector2f b, float epaisseur, sf::Color couleur)
+{
+	sf::Vector2f d = b - a;
+	float longueur = std::sqrt(d.x * d.x + d.y * d.y);
+	if (longueur == 0.f)
+		return;
+	sf::Vector2f n(-d.y / longueur * epaisseur / 2.f, d.x / longueur * epaisseur / 2.f);
+	for (sf::Vector2f p : { a + n, a - n, b + n, a - n, b - n, b + n })
+		triangles.append(sf::Vertex{ p, couleur });
+}
 
-    // Il faut au moins 2 points pour tracer une courbe
-    if (abscisses.size() < 2) return;
+void CGraphique::dessiner(sf::RenderTarget& cible, const sf::Font& font, sf::FloatRect zone, bool marquerDepart, const CGraphique* superposee) const
+{
+	std::vector<const CGraphique*> courbes = { this };
+	if (superposee)
+		courbes.push_back(superposee);
 
-    // 3. Calcul automatique des bornes min/max
-    auto [itMinX, itMaxX] = std::minmax_element(abscisses.begin(), abscisses.end());
-    auto [itMinY, itMaxY] = std::minmax_element(ordonnees.begin(), ordonnees.end());
+	// zone de tracé : place à gauche pour les graduations, en bas pour les graduations et le titre de l'axe X
+	const sf::FloatRect trace({ zone.position.x + 70.f, zone.position.y + 10.f }, { zone.size.x - 90.f, zone.size.y - 66.f });
+	const float gauche = trace.position.x;
+	const float bas = trace.position.y + trace.size.y;
 
-    float minX = static_cast<float>(*itMinX);
-    float maxX = static_cast<float>(*itMaxX);
-    float minY = static_cast<float>(std::min(0, *itMinY));
-    float maxY = static_cast<float>(*itMaxY);
+	if (abscisses.size() < 2)
+	{
+		sf::Text message = creerTexte(font, utf8("Pas encore de données : appuie sur Espace pour avancer"), 16, Theme::texteDiscret, {});
+		message.setPosition({ std::round(zone.position.x + (zone.size.x - message.getLocalBounds().size.x) / 2.f), std::round(zone.position.y + zone.size.y / 2.f) });
+		cible.draw(message);
+		return;
+	}
 
-    float etendueX = (maxX - minX > 0.f) ? (maxX - minX) : 1.f;
-    float etendueY = (maxY - minY > 0.f) ? (maxY - minY) : 1.f;
+	int maxDonneesX = 0;
+	int maxDonneesY = 0;
+	for (const CGraphique* c : courbes)
+	{
+		for (int x : c->abscisses)
+			maxDonneesX = std::max(maxDonneesX, x);
+		for (int y : c->ordonnees)
+			maxDonneesY = std::max(maxDonneesY, y);
+	}
+	const int pasX = pasGraduation(maxDonneesX);
+	const int pasY = pasGraduation(maxDonneesY);
+	const int maxX = pasX * static_cast<int>(std::ceil(maxDonneesX / static_cast<double>(pasX)));
+	const int maxY = pasY * static_cast<int>(std::ceil(maxDonneesY / static_cast<double>(pasY)));
 
-    // 4. Zone intérieure de tracé (avec une seconde marge à l'intérieur du panneau)
-    float margeInterne = 20.f;
-    float gaucheTrace = gauchePanneau + margeInterne;
-    float hautTrace = hautPanneau + margeInterne;
-    float largeurTrace = std::max(1.f, largeurPanneau - 2.f * margeInterne);
-    float hauteurTrace = std::max(1.f, hauteurPanneau - 2.f * margeInterne);
+	auto versPixel = [&](int x, int y) {
+		return sf::Vector2f(gauche + trace.size.x * x / std::max(1, maxX), bas - trace.size.y * y / std::max(1, maxY));
+	};
 
-    // 5. Construction et rendu du VertexArray (SFML 3)
-    sf::VertexArray sommets(sf::PrimitiveType::LineStrip, abscisses.size()); 
+	// graduations et quadrillage
+	for (int y = 0; y <= maxY; y += pasY)
+	{
+		float py = versPixel(0, y).y;
+		sf::RectangleShape ligne({ trace.size.x, 1.f });
+		ligne.setPosition({ gauche, std::round(py) });
+		ligne.setFillColor(Theme::survol);
+		cible.draw(ligne);
 
-    for (size_t i = 0; i < abscisses.size(); ++i) {
-        float normX = (static_cast<float>(abscisses[i]) - minX) / etendueX;
-        float normY = (static_cast<float>(ordonnees[i]) - minY) / etendueY;
+		sf::Text valeur = creerTexte(font, std::to_string(y), 12, Theme::texteDiscret, {});
+		valeur.setPosition({ std::round(gauche - 10.f - valeur.getLocalBounds().size.x), std::round(py) });
+		cible.draw(valeur);
+	}
+	for (int x = 0; x <= maxX; x += pasX)
+	{
+		float px = versPixel(x, 0).x;
+		sf::RectangleShape ligne({ 1.f, trace.size.y });
+		ligne.setPosition({ std::round(px), trace.position.y });
+		ligne.setFillColor(Theme::survol);
+		cible.draw(ligne);
 
-        float pixelX = gaucheTrace + normX * largeurTrace;
-        float pixelY = hautTrace + hauteurTrace - normY * hauteurTrace;
+		sf::Text valeur = creerTexte(font, std::to_string(x), 12, Theme::texteDiscret, {});
+		valeur.setPosition({ std::round(px - valeur.getLocalBounds().size.x / 2.f), std::round(bas + 16.f) });
+		cible.draw(valeur);
+	}
 
-        sommets[i] = sf::Vertex{ sf::Vector2f{pixelX, pixelY}, couleurLigne }; 
-    }
+	// axes
+	sf::RectangleShape axeX({ trace.size.x, 2.f });
+	axeX.setPosition({ gauche, bas - 1.f });
+	axeX.setFillColor(Theme::texteDiscret);
+	cible.draw(axeX);
+	sf::RectangleShape axeY({ 2.f, trace.size.y });
+	axeY.setPosition({ gauche - 1.f, trace.position.y });
+	axeY.setFillColor(Theme::texteDiscret);
+	cible.draw(axeY);
 
-    cible.draw(sommets);
+	// titres des axes
+	sf::Text texteX = creerTexte(font, utf8(titreX), 14, Theme::texte, {}, true);
+	texteX.setPosition({ std::round(gauche + (trace.size.x - texteX.getLocalBounds().size.x) / 2.f), std::round(bas + 42.f) });
+	cible.draw(texteX);
+
+	sf::Text texteY = creerTexte(font, utf8(titreY), 14, Theme::texte, {}, true);
+	texteY.setRotation(sf::degrees(-90.f));
+	texteY.setPosition({ std::round(zone.position.x + 14.f), std::round(trace.position.y + (trace.size.y + texteY.getLocalBounds().size.x) / 2.f) });
+	cible.draw(texteY);
+
+	// courbes
+	for (const CGraphique* c : courbes)
+	{
+		sf::VertexArray courbe(sf::PrimitiveType::Triangles);
+		for (size_t i = 1; i < c->abscisses.size(); ++i)
+			ajouterSegment(courbe, versPixel(c->abscisses[i - 1], c->ordonnees[i - 1]), versPixel(c->abscisses[i], c->ordonnees[i]), 2.5f, c->couleurLigne);
+		cible.draw(courbe);
+	}
+
+	if (marquerDepart)
+	{
+		sf::CircleShape depart(6.f, 24);
+		depart.setOrigin({ 6.f, 6.f });
+		depart.setPosition(versPixel(abscisses.front(), ordonnees.front()));
+		depart.setFillColor(Theme::panneau);
+		depart.setOutlineThickness(2.f);
+		depart.setOutlineColor(couleurLigne);
+		cible.draw(depart);
+	}
+
+	// point actuel
+	for (const CGraphique* c : courbes)
+	{
+		if (c->estVide())
+			continue;
+		sf::CircleShape actuel(5.f, 24);
+		actuel.setOrigin({ 5.f, 5.f });
+		actuel.setPosition(versPixel(c->abscisses.back(), c->ordonnees.back()));
+		actuel.setFillColor(c->couleurLigne);
+		actuel.setOutlineThickness(2.f);
+		actuel.setOutlineColor(sf::Color::White);
+		cible.draw(actuel);
+	}
 }

@@ -38,6 +38,7 @@ int main()
 	unsigned int jour = 0;
 
 	CInterface ui(font);
+	ui.enregistrer(jour, grid.getNbProies(), grid.getNbPredateurs());
 	sf::Clock horlogeUI;
 
 	while (window.isOpen())
@@ -55,9 +56,11 @@ int main()
 				if (keyPressed->code == sf::Keyboard::Key::Space && !ui.estOuvert())
 				{
 					for (size_t i = 0; i < t; ++i)
+					{
 						grid.gameLoop();
-
-					jour += t;
+						jour++;
+						ui.enregistrer(jour, grid.getNbProies(), grid.getNbPredateurs());
+					}
 				}
 			}
 
@@ -66,6 +69,8 @@ int main()
 			{
 				grid.reset();
 				jour = 0;
+				ui.effacerGraphiques();
+				ui.enregistrer(jour, grid.getNbProies(), grid.getNbPredateurs());
 			}
 		}
 		ui.animer(horlogeUI.restart().asSeconds());

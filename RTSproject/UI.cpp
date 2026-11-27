@@ -40,8 +40,8 @@ sf::ConvexShape rectangleArrondi(sf::Vector2f taille, float rayon, sf::Color cou
 	return forme;
 }
 
-// texte centré verticalement sur y (le baseline de SFML est à characterSize sous la position)
-static sf::Text creerTexte(const sf::Font& font, const sf::String& s, unsigned int taille, sf::Color couleur, sf::Vector2f position, bool gras = false)
+// le baseline de SFML est à characterSize sous la position, d'où l'origine à 0.64 * taille
+sf::Text creerTexte(const sf::Font& font, const sf::String& s, unsigned int taille, sf::Color couleur, sf::Vector2f position, bool gras)
 {
 	sf::Text texte(font, s, taille);
 	texte.setFillColor(couleur);
@@ -62,6 +62,39 @@ static sf::Color melanger(sf::Color a, sf::Color b, float t)
 static sf::Color estompe(sf::Color c, bool actif)
 {
 	return actif ? c : melanger(c, Theme::carte, 0.65f);
+}
+
+// fond d'une fenêtre (menu, graphique) avec son ombre
+static void dessinerPanneau(sf::RenderTarget& cible, sf::FloatRect zone)
+{
+	sf::ConvexShape ombre = rectangleArrondi(zone.size, 16.f, sf::Color(0, 0, 0, 90));
+	ombre.setPosition(zone.position + sf::Vector2f(0.f, 8.f));
+	cible.draw(ombre);
+
+	sf::ConvexShape fond = rectangleArrondi(zone.size, 16.f, Theme::panneau);
+	fond.setPosition(zone.position);
+	cible.draw(fond);
+}
+
+static void dessinerCroix(sf::RenderTarget& cible, sf::FloatRect bouton, sf::Vector2f souris)
+{
+	bool survol = bouton.contains(souris);
+	if (survol)
+	{
+		sf::ConvexShape fond = rectangleArrondi(bouton.size, 8.f, Theme::survol);
+		fond.setPosition(bouton.position);
+		cible.draw(fond);
+	}
+	sf::Vector2f centre = bouton.position + bouton.size / 2.f;
+	for (float angle : { 45.f, -45.f })
+	{
+		sf::RectangleShape trait({ 16.f, 2.f });
+		trait.setOrigin({ 8.f, 1.f });
+		trait.setPosition(centre);
+		trait.setRotation(sf::degrees(angle));
+		trait.setFillColor(survol ? Theme::texte : Theme::texteDiscret);
+		cible.draw(trait);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -270,7 +303,11 @@ namespace
 	const float basColonne = 8.f;
 }
 
-CInterface::CInterface(const sf::Font& font) : font(font)
+CInterface::CInterface(const sf::Font& font)
+	: font(font),
+	courbeProies(Theme::proie, "Jours", "Population"),
+	courbePredateurs(Theme::predateur, "Jours", "Population"),
+	phases(Theme::general, "Proies", "Prédateurs")
 {
 	// --- général
 	general.push_back(std::make_unique<CInterrupteur>(font, "Animations", playAnimations, Theme::general));
@@ -316,6 +353,15 @@ void CInterface::calculerDisposition()
 {
 	// bouton du menu dans la barre latérale
 	boutonMenu = sf::FloatRect({ windowWidth + 12.f, 16.f }, { placeBoutton - 24.f, 44.f });
+
+	// boutons des graphiques sous les statistiques
+	for (int i = 0; i < 4; ++i)
+		boutonsGraphiques[i] = sf::FloatRect({ windowWidth + 12.f, 384.f + i * 48.f }, { placeBoutton - 24.f, 40.f });
+
+	// fenêtre des graphiques, centrée sur la zone de simulation
+	const sf::Vector2f tailleGraphique(std::min(1100.f, windowWidth - 80.f), std::min(640.f, windowHeight - 80.f));
+	panneauGraphique = sf::FloatRect({ std::round((windowWidth - tailleGraphique.x) / 2.f), std::round((windowHeight - tailleGraphique.y) / 2.f) }, tailleGraphique);
+	boutonFermerGraphique = sf::FloatRect({ panneauGraphique.position.x + tailleGraphique.x - padding - 32.f, panneauGraphique.position.y + 22.f }, { 32.f, 32.f });
 
 	const float largeurUtile = largeurPanneau - 2.f * padding;
 	const float largeurColonne = (largeurUtile - gouttiere) / 2.f;
@@ -370,8 +416,13 @@ bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& 
 {
 	if (const auto* touche = event.getIf<sf::Event::KeyPressed>())
 	{
-		if (touche->code == sf::Keyboard::Key::Escape && ouvert)
-			ouvert = false;
+		if (touche->code == sf::Keyboard::Key::Escape)
+		{
+			if (ouvert)
+				ouvert = false;
+			else
+				vue = Vue::Aucune;
+		}
 		else if (touche->code == sf::Keyboard::Key::M)
 			basculer();
 		return false;
@@ -414,8 +465,24 @@ bool CInterface::gererEvenement(const sf::Event& event, const sf::RenderWindow& 
 		return false;
 	}
 
+	for (int i = 0; i < 4; ++i)
+	{
+		if (boutonsGraphiques[i].contains(souris))
+		{
+			Vue choisie = static_cast<Vue>(i + 1);
+			vue = (vue == choisie) ? Vue::Aucune : choisie;
+			ouvert = false;
+			return false;
+		}
+	}
+
 	if (!ouvert)
+	{
+		// clic sur la croix ou sur la simulation en dehors du graphique
+		if (boutonFermerGraphique.contains(souris) || (!panneauGraphique.contains(souris) && souris.x < windowWidth))
+			vue = Vue::Aucune;
 		return false;
+	}
 
 	if (boutonFermer.contains(souris) || !panneau.contains(souris))
 	{
@@ -440,8 +507,31 @@ void CInterface::animer(float dt)
 void CInterface::dessiner(sf::RenderTarget& cible, sf::Vector2f souris, unsigned int nbProies, unsigned int nbPredateurs, unsigned int jour) const
 {
 	dessinerBarreLaterale(cible, souris, nbProies, nbPredateurs, jour);
+	if (vue != Vue::Aucune)
+		dessinerGraphique(cible, souris);
 	if (ouvert)
 		dessinerMenu(cible, souris);
+}
+
+void CInterface::basculer()
+{
+	ouvert = !ouvert;
+	if (ouvert)
+		vue = Vue::Aucune;
+}
+
+void CInterface::enregistrer(unsigned int jour, unsigned int nbProies, unsigned int nbPredateurs)
+{
+	courbeProies.ajouterPoint(jour, nbProies);
+	courbePredateurs.ajouterPoint(jour, nbPredateurs);
+	phases.ajouterPoint(nbProies, nbPredateurs);
+}
+
+void CInterface::effacerGraphiques()
+{
+	courbeProies.effacer();
+	courbePredateurs.effacer();
+	phases.effacer();
 }
 
 void CInterface::dessinerBarreLaterale(sf::RenderTarget& cible, sf::Vector2f souris, unsigned int nbProies, unsigned int nbPredateurs, unsigned int jour) const
@@ -494,6 +584,50 @@ void CInterface::dessinerBarreLaterale(sf::RenderTarget& cible, sf::Vector2f sou
 		y += 82.f;
 	}
 
+	// boutons des graphiques
+	struct BoutonGraphique { const char* nom; sf::Color couleur; Vue vue; };
+	const BoutonGraphique boutons[4] = {
+		{ "Proies", Theme::proie, Vue::Proies },
+		{ "Prédateurs", Theme::predateur, Vue::Predateurs },
+		{ "Les deux", Theme::proie, Vue::LesDeux },
+		{ "Phases", Theme::general, Vue::Phases }
+	};
+
+	cible.draw(creerTexte(font, utf8("GRAPHIQUES"), 12, Theme::texteDiscret, { x + 14.f, boutonsGraphiques[0].position.y - 18.f }, true));
+	for (int i = 0; i < 4; ++i)
+	{
+		const sf::FloatRect& zone = boutonsGraphiques[i];
+		const bool actif = vue == boutons[i].vue;
+
+		sf::ConvexShape fondBouton = rectangleArrondi(zone.size, 10.f, (actif || zone.contains(souris)) ? Theme::survol : Theme::carte);
+		fondBouton.setPosition(zone.position);
+		cible.draw(fondBouton);
+
+		if (actif)
+		{
+			sf::RectangleShape liseret({ 3.f, zone.size.y - 16.f });
+			liseret.setPosition({ zone.position.x, zone.position.y + 8.f });
+			liseret.setFillColor(boutons[i].couleur);
+			cible.draw(liseret);
+		}
+
+		const float centreBouton = zone.position.y + zone.size.y / 2.f;
+		sf::CircleShape pastille(5.f, 16);
+		pastille.setOrigin({ 5.f, 5.f });
+		pastille.setPosition({ zone.position.x + 18.f, centreBouton });
+		pastille.setFillColor(boutons[i].couleur);
+		cible.draw(pastille);
+		if (boutons[i].vue == Vue::LesDeux)
+		{
+			// deuxième pastille (prédateurs) qui chevauche la première
+			pastille.move({ 6.f, 0.f });
+			pastille.setFillColor(Theme::predateur);
+			cible.draw(pastille);
+		}
+
+		cible.draw(creerTexte(font, utf8(boutons[i].nom), 15, Theme::texte, { zone.position.x + 36.f, centreBouton }, actif));
+	}
+
 	// aide en bas
 	cible.draw(creerTexte(font, utf8("Espace : jour suivant"), 12, Theme::texteDiscret, { x + 14.f, windowHeight - 44.f }));
 	cible.draw(creerTexte(font, utf8("M : menu"), 12, Theme::texteDiscret, { x + 14.f, windowHeight - 24.f }));
@@ -524,14 +658,7 @@ void CInterface::dessinerMenu(sf::RenderTarget& cible, sf::Vector2f souris) cons
 	voile.setFillColor(sf::Color(0, 0, 0, 150));
 	cible.draw(voile);
 
-	// ombre + panneau
-	sf::ConvexShape ombre = rectangleArrondi(panneau.size, 16.f, sf::Color(0, 0, 0, 90));
-	ombre.setPosition(panneau.position + sf::Vector2f(0.f, 8.f));
-	cible.draw(ombre);
-
-	sf::ConvexShape fond = rectangleArrondi(panneau.size, 16.f, Theme::panneau);
-	fond.setPosition(panneau.position);
-	cible.draw(fond);
+	dessinerPanneau(cible, panneau);
 
 	const float x = panneau.position.x + padding;
 	const float y = panneau.position.y;
@@ -539,24 +666,7 @@ void CInterface::dessinerMenu(sf::RenderTarget& cible, sf::Vector2f souris) cons
 	// titre
 	cible.draw(creerTexte(font, utf8("Paramètres"), 28, Theme::texte, { x, y + 38.f }, true));
 
-	// bouton fermer (croix)
-	bool survolFermer = boutonFermer.contains(souris);
-	if (survolFermer)
-	{
-		sf::ConvexShape fondCroix = rectangleArrondi(boutonFermer.size, 8.f, Theme::survol);
-		fondCroix.setPosition(boutonFermer.position);
-		cible.draw(fondCroix);
-	}
-	sf::Vector2f centreCroix = boutonFermer.position + boutonFermer.size / 2.f;
-	for (float angle : { 45.f, -45.f })
-	{
-		sf::RectangleShape trait({ 16.f, 2.f });
-		trait.setOrigin({ 8.f, 1.f });
-		trait.setPosition(centreCroix);
-		trait.setRotation(sf::degrees(angle));
-		trait.setFillColor(survolFermer ? Theme::texte : Theme::texteDiscret);
-		cible.draw(trait);
-	}
+	dessinerCroix(cible, boutonFermer, souris);
 
 	// section générale
 	cible.draw(creerTexte(font, utf8("GÉNÉRAL"), 13, Theme::texteDiscret, { x, y + 92.f }, true));
@@ -576,4 +686,62 @@ void CInterface::dessinerMenu(sf::RenderTarget& cible, sf::Vector2f souris) cons
 	// pied de page
 	cible.draw(creerTexte(font, utf8("« Apparition » relance la simulation   ·   Échap pour fermer"), 13, Theme::texteDiscret,
 		{ x, panneau.position.y + panneau.size.y - 26.f }));
+}
+
+void CInterface::dessinerGraphique(sf::RenderTarget& cible, sf::Vector2f souris) const
+{
+	// voile sombre sur la simulation seulement (la barre latérale reste visible)
+	sf::RectangleShape voile({ static_cast<float>(windowWidth), static_cast<float>(windowHeight) });
+	voile.setFillColor(sf::Color(0, 0, 0, 150));
+	cible.draw(voile);
+
+	dessinerPanneau(cible, panneauGraphique);
+	dessinerCroix(cible, boutonFermerGraphique, souris);
+
+	const CGraphique* graphique = &courbeProies;
+	std::string titre = "Proies";
+	std::string sousTitre = "Population de proies en fonction du temps";
+	sf::Color accent = Theme::proie;
+	if (vue == Vue::Predateurs)
+	{
+		graphique = &courbePredateurs;
+		titre = "Prédateurs";
+		sousTitre = "Population de prédateurs en fonction du temps";
+		accent = Theme::predateur;
+	}
+	else if (vue == Vue::LesDeux)
+	{
+		titre = "Proies et prédateurs";
+		sousTitre = "Populations en fonction du temps   ·   vert : proies   ·   rouge : prédateurs";
+	}
+	else if (vue == Vue::Phases)
+	{
+		graphique = &phases;
+		titre = "Diagramme de phases";
+		sousTitre = "Prédateurs en fonction des proies   ·   ○ départ   ● aujourd'hui";
+		accent = Theme::general;
+	}
+
+	const float x = panneauGraphique.position.x + padding;
+	const float y = panneauGraphique.position.y;
+
+	sf::CircleShape pastille(6.f, 16);
+	pastille.setOrigin({ 6.f, 6.f });
+	pastille.setPosition({ x + 6.f, y + 38.f });
+	pastille.setFillColor(accent);
+	cible.draw(pastille);
+	float xTitre = x + 22.f;
+	if (vue == Vue::LesDeux)
+	{
+		pastille.move({ 8.f, 0.f });
+		pastille.setFillColor(Theme::predateur);
+		cible.draw(pastille);
+		xTitre += 8.f;
+	}
+	cible.draw(creerTexte(font, utf8(titre), 28, Theme::texte, { xTitre, y + 38.f }, true));
+	cible.draw(creerTexte(font, utf8(sousTitre), 14, Theme::texteDiscret, { x, y + 74.f }));
+
+	const sf::FloatRect zone({ x, y + 100.f }, { panneauGraphique.size.x - 2.f * padding, panneauGraphique.size.y - 100.f - padding });
+	const CGraphique* superposee = (vue == Vue::LesDeux) ? &courbePredateurs : nullptr;
+	graphique->dessiner(cible, font, zone, vue == Vue::Phases, superposee);
 }
